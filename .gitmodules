@@ -1,0 +1,6 @@
+[submodule "include/libuv"]
+	path = include/libuv
+	url = git://github.com/joyent/libuv.git
+[submodule "lib/libuv"]
+	path = lib/libuv
+	url = git://github.com/joyent/libuv.git

@@ -13,16 +13,12 @@ fi
 echo "----------------------------------------"
 echo "Cloning submodules"
 echo "----------------------------------------"
-git submodule update --init
-
-echo "----------------------------------------"
-echo "Configuring for ${OS}"
-echo "----------------------------------------"
+git submodule update --init --recursive
 
 # Getting Gyp build environment.
 if [ ! -d "bin/gyp" ]; then
     echo "git clone https://git.chromium.org/external/gyp.git bin/gyp"
-        git clone https://git.chromium.org/external/gyp.git bin/gyp
+    git clone https://git.chromium.org/external/gyp.git bin/gyp
 fi
 if [ ! -d "lib/libuv/build" ]; then
     mkdir lib/libuv/build
@@ -37,7 +33,10 @@ cd bin/wrk
 make
 cd ../../
 
-$GYP --depth=. -Dlibrary=static_library haywire.gyp
+echo "----------------------------------------"
+echo "Configuring for ${OS}"
+echo "----------------------------------------"
+$GYP -f make --depth=. -Dlibrary=static_library haywire.gyp
 
 echo "----------------------------------------"
 echo "Compiling Haywire"

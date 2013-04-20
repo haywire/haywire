@@ -44,8 +44,8 @@ typedef struct
 void on_close(uv_handle_t* handle)
 {
     printf("on_close()\n");
-	client_t* client = (client_t*) handle->data;
-	free(client);
+    client_t* client = (client_t*) handle->data;
+    free(client);
 }
 
 uv_buf_t on_alloc(uv_handle_t* client, size_t suggested_size) 

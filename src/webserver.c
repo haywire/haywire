@@ -43,7 +43,7 @@ typedef struct
 
 void on_close(uv_handle_t* handle)
 {
-    printf("CLOSED\n");
+    printf("on_close()\n");
 	client_t* client = (client_t*) handle->data;
 	free(client);
 }
@@ -58,7 +58,7 @@ uv_buf_t on_alloc(uv_handle_t* client, size_t suggested_size)
 
 void on_read(uv_stream_t* tcp, ssize_t nread, uv_buf_t buf) 
 {
-    printf("READ\n");
+    printf("on_read()\n");
 	size_t parsed;
 	client_t* client = (client_t*) tcp->data;
 
@@ -67,14 +67,14 @@ void on_read(uv_stream_t* tcp, ssize_t nread, uv_buf_t buf)
 		parsed = http_parser_execute(&client->parser, &parser_settings, buf.base, nread);
 		if (parsed < nread) 
 		{
-            printf("ERROR 1!!!\n");
+            printf("ERROR on_read() parsed < nread\n");
 			//uv_close((uv_handle_t*) &client->handle, on_close);
 			//uv_read_start((uv_stream_t*)&client->handle, on_alloc, on_read);
 		}
 	} 
 	else 
 	{
-        printf("ERROR 2!!!!\n");
+        printf("ERROR on_read() nread < 0\n");
 		uv_err_t err = uv_last_error(uv_loop);
 		if (err.code != UV_EOF) 
 		{
@@ -89,7 +89,7 @@ static int request_num = 1;
 
 void on_connect(uv_stream_t* server_handle, int status) 
 {
-    printf("CONNECT %d\n", status);
+    printf("on_connect() status:%d\n", status);
 	int r;
 
 	client_t* client = (client_t *)malloc(sizeof(client_t)); // CHANGED
@@ -103,22 +103,24 @@ void on_connect(uv_stream_t* server_handle, int status)
 
 	r = uv_accept(server_handle, (uv_stream_t*)&client->handle);
     
-    printf("ACCEPT %d\n", r);
+    printf("uv_accept() returned:%d\n", r);
 
-	uv_read_start((uv_stream_t*)&client->handle, on_alloc, on_read);
+	r = uv_read_start((uv_stream_t*)&client->handle, on_alloc, on_read);
+	printf("uv_read_start() returned:%d\n", r);
 }
 
 void after_write(uv_write_t* req, int status) 
 {
     //printf("%d\n", status);
 	//uv_close((uv_handle_t*)req->handle, on_close);
+	printf("after_write() status:%d\n", status);
 }
 
 int on_headers_complete(http_parser* parser) 
 {
 	client_t* client = (client_t*) parser->data;
     
-    printf("HEADERS %d\n", client->request_num);
+    printf("on_headers_complete()\n");
   
 	uv_write(
 		&client->write_req,
@@ -132,13 +134,13 @@ int on_headers_complete(http_parser* parser)
 
 int on_message_begin(http_parser* parser)
 {
-    printf("MESSAGE BEGIN\n");
+    printf("on_message_begin()\n");
     return 0;
 }
 
 int on_message_complete(http_parser* parser)
 {
-    printf("MESSAGE COMPLETE\n");
+    printf("on_message_complete()\n");
     return 0;
 }
 
@@ -158,6 +160,8 @@ int start_server()
 
 	r = uv_tcp_bind(&server, uv_ip4_addr("0.0.0.0", 8000));
 	uv_listen((uv_stream_t*)&server, 128, on_connect);
+
+	printf("Listening on 0.0.0.0:8000\n");
 
 	uv_run(uv_loop, UV_RUN_DEFAULT);
 	return 0;

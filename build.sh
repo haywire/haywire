@@ -30,7 +30,7 @@ cd bin/wrk
 make
 cd ../../
 
-$GYP --depth=. -Dlibrary=static_library haywire.gyp
+$GYP -f make --depth=. -Dlibrary=static_library haywire.gyp
 
 echo "----------------------------------------"
 echo "Compiling Haywire"

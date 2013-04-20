@@ -121,11 +121,11 @@ int on_headers_complete(http_parser* parser)
     printf("on_headers_complete()\n");
   
     int r = uv_write(
-  	    &client->write_req,
-		    (uv_stream_t*)&client->handle,
-		    &resbuf,
-		    1,
-		    after_write);
+        &client->write_req,
+        (uv_stream_t*)&client->handle,
+        &resbuf,
+        1,
+        after_write);
 
     printf("uv_write() returned:%d\n", r);
 

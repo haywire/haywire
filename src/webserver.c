@@ -69,7 +69,6 @@ void on_read(uv_stream_t* tcp, ssize_t nread, uv_buf_t buf)
         {
             printf("ERROR on_read() parsed < nread\n");
             //uv_close((uv_handle_t*) &client->handle, on_close);
-            //uv_read_start((uv_stream_t*)&client->handle, on_alloc, on_read);
         }
     } 
     else 

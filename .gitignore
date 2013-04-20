@@ -11,3 +11,14 @@
 *.lai
 *.la
 *.a
+
+# Visual Studio uglies
+*.v11.suo
+*.vcxproj.filters
+*.vcxproj.user
+*.opensdf
+*.ncrunchsolution
+
+# Build artifacts
+Default/
+Debug/

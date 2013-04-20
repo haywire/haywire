@@ -35,10 +35,10 @@ static uv_buf_t resbuf;
 
 typedef struct 
 {
-	uv_tcp_t handle;
-	http_parser parser;
-	uv_write_t write_req;
-	int request_num;
+    uv_tcp_t handle;
+    http_parser parser;
+    uv_write_t write_req;
+    int request_num;
 } client_t;
 
 void on_close(uv_handle_t* handle)
@@ -50,10 +50,10 @@ void on_close(uv_handle_t* handle)
 
 uv_buf_t on_alloc(uv_handle_t* client, size_t suggested_size) 
 {
-	uv_buf_t buf;
-	buf.base = (char *)malloc(suggested_size * 10); // CHANGED
-	buf.len = suggested_size * 10;
-	return buf;
+    uv_buf_t buf;
+    buf.base = (char *)malloc(suggested_size * 10);
+    buf.len = suggested_size * 10;
+    return buf;
 }
 
 void on_read(uv_stream_t* tcp, ssize_t nread, uv_buf_t buf) 

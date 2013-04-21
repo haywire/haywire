@@ -18,6 +18,7 @@
 *.vcxproj.user
 *.opensdf
 *.ncrunchsolution
+*.sdf
 
 # Build artifacts
 Default/

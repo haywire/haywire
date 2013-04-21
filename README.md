@@ -21,7 +21,9 @@ Haywire isn't very useful yet but I wanted to open source it from the very begin
 Feel free to join in if you feel like helping progress Haywire. I'm open to new ideas and would love to work with some people instead of by myself!
 
 ## Building Haywire
-To compile Haywire you need git and python installed and in your path.
+To compile Haywire you need `git` and `python` installed and in your path.
+
+Haywire uses `gyp` which supports generating make type builds or Visual Studio and Xcode projects. The Visual Studio and Xcode projects aren't fully complete so they may not function just yet but they will real soon, hang in there.
     
     git clone https://github.com/kellabyte/Haywire.git
 

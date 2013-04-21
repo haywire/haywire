@@ -25,21 +25,29 @@ if [ ! -d "lib/libuv/build" ]; then
     cp -Rf bin/gyp lib/libuv/build/gyp
 fi
 
-# Compiling wrk
-echo "----------------------------------------"
-echo "Compiling wrk"
-echo "----------------------------------------"
-cd bin/wrk
-make
-cd ../../
+if [ !PLATFORM_UNIX ]; then
+	echo "----------------------------------------"
+	echo "Creating Visual Studio solution"
+	echo "----------------------------------------"
+	
+	$GYP --depth=. -Dlibrary=static_library -Dtarget=ia32 haywire.gyp
+else
+	# Compiling wrk
+	echo "----------------------------------------"
+	echo "Compiling wrk"
+	echo "----------------------------------------"
+	cd bin/wrk
+	make
+	cd ../../
 
-echo "----------------------------------------"
-echo "Configuring for ${OS}"
-echo "----------------------------------------"
-$GYP -f make --depth=. -Dlibrary=static_library haywire.gyp
+	echo "----------------------------------------"
+	echo "Configuring for ${OS}"
+	echo "----------------------------------------"
+	$GYP -f make --depth=. -Dlibrary=static_library haywire.gyp
 
-echo "----------------------------------------"
-echo "Compiling Haywire"
-echo "----------------------------------------"
-./clean.sh
-make
+	echo "----------------------------------------"
+	echo "Compiling Haywire"
+	echo "----------------------------------------"
+	./clean.sh
+	make
+fi

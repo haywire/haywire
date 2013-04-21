@@ -17,7 +17,7 @@
 *.vcxproj.filters
 *.vcxproj.user
 *.opensdf
-*.ncrunchsolution
+*.ncrunchsolution*
 *.sdf
 
 # Build artifacts

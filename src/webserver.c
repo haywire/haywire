@@ -21,8 +21,9 @@
 
 #define RESPONSE \
   "HTTP/1.1 200 OK\r\n" \
-  "Content-Type: text/plain\r\n" \
+  "Content-Type: text/html\r\n" \
   "Content-Length: 13\r\n" \
+  "Server: Haywire/master\r\n" \
   "Connection: Keep-Alive\r\n" \
   "\r\n" \
   "hello world\n"

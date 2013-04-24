@@ -162,6 +162,30 @@ int on_message_complete(http_parser* parser)
     return 0;
 }
 
+int on_url(http_parser* parser, const char *url, size_t len)
+{
+    int i = 0;
+    const char* c;
+    char* parsedurl;
+
+    // Find length of URL
+    for(c = url; !((*c == ' ') || (*c == '\r') || (*c == '\n')); c++)
+        i++;
+
+    // Copy URL
+    parsedurl = (char*)malloc((i + 1) * sizeof(char));
+    *(parsedurl + i) = 0;
+    memcpy(parsedurl, url, i);
+
+    // Do stuff
+    printf("Hit url: '%s'\n", parsedurl);
+
+    // Clean up
+    free(parsedurl);
+
+    return 0;
+}
+
 int start_server()
 {
     int r;
@@ -169,6 +193,7 @@ int start_server()
     parser_settings.on_headers_complete = on_headers_complete;
     parser_settings.on_message_begin = on_message_begin;
     parser_settings.on_message_complete = on_message_complete;
+    parser_settings.on_url = on_url;
   
     resbuf.base = RESPONSE;
     resbuf.len = sizeof(RESPONSE);

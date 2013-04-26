@@ -1,2 +1,2 @@
 @echo off
-bin\Win-Bash\bash.exe build.sh
+bin\Win-Bash\bash.exe build.sh %1

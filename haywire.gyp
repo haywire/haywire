@@ -1,43 +1,51 @@
 {
     'targets': [
+      
+      ########################################
+      # haywire static library
+      ########################################
       {
         'target_name': 'haywire',
-        'type': 'executable',
+        'product_name': 'haywire',
+        'type': 'static_library',
         'msvs_guid': '5ECEC9E5-8F23-47B6-93E0-C3B328B3BE65',
+        
         'dependencies': [
           './lib/libuv/uv.gyp:libuv',
         ],
-        'defines': [
-          'DEFINE_FOO',
-          'DEFINE_A_VALUE=value',
-        ],
+
         'include_dirs': [
           './lib/libuv/include',
         ],
+
         'sources': [
-          'src/program.c',
-          'src/http_parser.c',
-          'src/webserver.c'
+          'include/haywire.h',
+          'src/haywire/http_parser.c',
+          'src/haywire/webserver.c'
         ],
-        'conditions': [
-          ['OS=="linux"', {
-            'defines': [
-              'LINUX_DEFINE',
-            ],
-            'include_dirs': [
-              'include/linux',
-            ],
-          }],
-          ['OS=="win"', {
-            'defines': [
-              'WINDOWS_SPECIFIC_DEFINE',
-            ],
-          }, { # OS != "win",
-            'defines': [
-              'NON_WINDOWS_DEFINE',
-            ],
-          }]
+      }, # haywire static library
+
+      ########################################
+      # hello_world sample
+      ########################################
+      {
+        'target_name': 'hello_world',
+        'product_name': 'hello_world',
+        'type': 'executable',
+        'msvs_guid': '5ECEC9E5-8F23-47B6-93E0-C3B328B3BE66',
+
+        'dependencies': [
+          'haywire',
         ],
-      },
+        
+        'include_dirs': [
+          './include',
+        ],
+
+        'sources': [
+          'src/samples/hello_world/program.c',
+        ],
+      }, # hello_world sample
+
     ],
   }

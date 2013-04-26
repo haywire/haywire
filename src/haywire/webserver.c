@@ -162,7 +162,7 @@ int on_message_complete(http_parser* parser)
     return 0;
 }
 
-int start_server()
+int hw_start_server(char *ipaddress, int port)
 {
     int r;
 
@@ -176,7 +176,7 @@ int start_server()
     uv_loop = uv_default_loop();
     r = uv_tcp_init(uv_loop, &server);
 
-    r = uv_tcp_bind(&server, uv_ip4_addr("0.0.0.0", 8000));
+    r = uv_tcp_bind(&server, uv_ip4_addr(ipaddress, port));
     uv_listen((uv_stream_t*)&server, 128, on_connect);
 
     printf("Listening on 0.0.0.0:8000\n");

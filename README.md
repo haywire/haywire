@@ -32,4 +32,5 @@ Haywire uses `gyp` which supports generating make type builds or Visual Studio a
 
 ### Compiling on Windows
 Open the Developer Command Prompt for Visual Studio
+
     build.bat

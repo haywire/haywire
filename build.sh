@@ -6,10 +6,22 @@ PLATFORM_MACOSX="Darwin"
 GYP=./lib/libuv/build/gyp/gyp
 CONFIGURATION="debug"
 
-# Set which configuration we should build. Default is Debug.
-if [ "$1" != "" ]; then
-  CONFIGURATION=$1
-fi
+# Parse command line arguments
+while getopts ":o:c:" option
+do
+    case $option in
+        o)
+          OS=$OPTARG
+          ;;
+        c)
+          CONFIGURATION=$OPTARG
+          ;;
+        ?)
+          echo "invalid option provided"
+          exit
+          ;;
+  esac
+done
 
 echo "----------------------------------------"
 echo "Cloning submodules"

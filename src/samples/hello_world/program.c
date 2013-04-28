@@ -3,5 +3,5 @@
 
 int main()
 {
-    hw_start_server("0.0.0.0", 8000);
+    hw_http_open("0.0.0.0", 8000);
 }

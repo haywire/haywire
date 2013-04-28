@@ -1,1 +1,1 @@
-void hw_start_server(char *ipaddress, int port);
+void hw_http_open(char *ipaddress, int port);

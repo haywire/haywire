@@ -20,8 +20,12 @@
 
         'sources': [
           'include/haywire.h',
+          'src/haywire/http_parser.h',
           'src/haywire/http_parser.c',
-          'src/haywire/webserver.c'
+          'src/haywire/http_request.h',
+          'src/haywire/http_request.c',
+          'src/haywire/http_server.h',
+          'src/haywire/http_server.c'
         ],
       }, # haywire static library
 

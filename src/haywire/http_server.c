@@ -8,6 +8,7 @@
 #include <assert.h>
 #include "uv.h"
 #include "http_server.h"
+#include "../../include/haywire.h"
 #include "http_request.h"
 #include "http_parser.h"
 
@@ -19,18 +20,6 @@
     exit(1); \
   }
 
-#define CRLF "\r\n"
-static const char response[] =
-  "HTTP/1.1 200 OK" CRLF
-  "Server: Haywire/master" CRLF
-  "Date: Fri, 26 Aug 2011 00:31:53 GMT" CRLF
-  "Connection: Keep-Alive" CRLF
-  "Content-Type: text/html" CRLF
-  "Content-Length: 14" CRLF
-  CRLF
-  "hello world" CRLF
-  ;
-
 static uv_loop_t* uv_loop;
 static uv_tcp_t server;
 static http_parser_settings parser_settings;
@@ -38,6 +27,13 @@ static http_parser_settings parser_settings;
 static uv_buf_t resbuf;
 
 static int request_num = 1;
+
+http_request_callback http_req_callback;
+
+void hw_http_register_request_callback(http_request_callback callback)
+{
+	http_req_callback = callback;
+}
 
 int hw_http_open(char *ipaddress, int port)
 {
@@ -48,9 +44,6 @@ int hw_http_open(char *ipaddress, int port)
     parser_settings.on_message_complete = http_request_on_message_complete;
     parser_settings.on_url = http_request_on_url;
   
-    resbuf.base = (char *)response;
-    resbuf.len = sizeof(response);
-
     uv_loop = uv_default_loop();
     r = uv_tcp_init(uv_loop, &server);
 
@@ -118,12 +111,16 @@ void http_stream_on_read(uv_stream_t* tcp, ssize_t nread, uv_buf_t buf)
     free(buf.base);
 }
 
-int http_server_write_response(http_parser* parser) 
+int http_server_write_response(http_parser *parser, char *response) 
 {
     http_request *request = (http_request *)parser->data;
     uv_write_t* write_req = (uv_write_t *)malloc(sizeof(*write_req));
-  
-    int r = uv_write(write_req, (uv_stream_t*)&request->stream, &resbuf, 1, http_server_after_write);
+	int r;
+	
+	resbuf.base = response;
+	resbuf.len = strlen(response) + 1;
+
+    r = uv_write(write_req, (uv_stream_t*)&request->stream, &resbuf, 1, http_server_after_write);	
 
     return 0;
 }

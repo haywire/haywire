@@ -15,6 +15,7 @@
         ],
 
         'include_dirs': [
+		  './include',
           './lib/libuv/include',
         ],
 
@@ -24,6 +25,7 @@
           'src/haywire/http_parser.c',
           'src/haywire/http_request.h',
           'src/haywire/http_request.c',
+		  'src/haywire/http_request_context.h',
           'src/haywire/http_server.h',
           'src/haywire/http_server.c'
         ],

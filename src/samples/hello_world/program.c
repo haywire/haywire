@@ -13,7 +13,7 @@ static const char response[] =
   "hello world" CRLF
   ;
 
-char *on_http_request()
+char *on_http_request(http_request *request)
 {
 	return (char *)response;
 }

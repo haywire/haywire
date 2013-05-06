@@ -7,6 +7,12 @@
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
+#if defined(_WIN32) || defined(_WIN64) 
+    #define strcasecmp _stricmp 
+    #define strncasecmp _strnicmp 
+    #define strtok_r strtok_s
+#endif
+
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -15,7 +21,7 @@
 #include "radix.h"
 
 #ifndef LSB_FIRST
-static inline int count_bits(char *k1, char *k2, int count)
+static __inline int count_bits(char *k1, char *k2, int count)
 {
     int mask = 128;
     while (~(*k1 ^ *k2) & mask && --count) {
@@ -66,7 +72,7 @@ static int count_common_bits(char *k1, char *k2, int max)
 }
 
 #ifndef LSB_FIRST
-static inline int shift(int i)
+static __inline int shift(int i)
 {
     return 128 >> (i & 7);
 }
@@ -272,19 +278,95 @@ int rxt_put(char *key, void *value, rxt_node *n)
 #undef NEWLEAF
 }
 
-static rxt_node* get_internal(char *key, rxt_node *root)
+static rxt_node* get_internal_custom(char *key, rxt_node *root, rxt_compare_method compare_method)
 {
-    if (!root) return NULL;
+    int match;
+    if (!root) 
+    {
+        return NULL;
+    }
 
-    if (root->color) {
-        if (2 == root->color) root = (rxt_node *)root->value;
-        if (!strncmp(key, root->key, root->pos))
+    if (root->color) 
+    {
+        if (2 == root->color) 
+        {
+            root = (rxt_node *)root->value;
+        }
+
+        match = compare_method(key, root);
+        if (match)
+        {
             return root;
+        }
+        else
+        {
+            return NULL;
+        }
         return NULL;
     }
 
     if (get_bit_at(key, root->pos))
+    {
+        return get_internal_custom(key, root->right, compare_method);
+    }
+    return get_internal_custom(key, root->left, compare_method);
+}
+
+static rxt_node* get_internal(char *key, rxt_node *root)
+{
+    int equal = 1;
+    char *route_token;
+    char *route_token_ptr;
+    char *request_token;
+    char *request_token_ptr;
+    char prefix;
+
+    if (!root) return NULL;
+
+    if (root->color) 
+    {
+        if (2 == root->color) 
+        {
+            root = (rxt_node *)root->value;
+        }
+
+        route_token = strtok_r(root->key, "/", &route_token_ptr);
+        request_token = strtok_r(key, "/", &request_token_ptr);
+        while (route_token != NULL && request_token != NULL)
+        {
+            if (route_token == NULL || request_token == NULL)
+                break;
+
+            prefix = *route_token;
+            if (prefix == '$')
+            {
+                // Variable substitution.
+            }
+            else
+            {
+                if (strncasecmp(route_token, request_token, 0))
+                {
+                    equal = 0;
+                    break;
+                }
+            }
+            
+            //printf ("ROUTE:%s\tREQUEST:%s\n", route_token, request_token);
+            route_token = strtok_r(NULL, "/", &route_token_ptr);
+            request_token = strtok_r(NULL, "/", &request_token_ptr);
+        }
+
+        if (equal)
+        {
+            return root;
+        }
+        return NULL;
+    }
+
+    if (get_bit_at(key, root->pos))
+    {
         return get_internal(key, root->right);
+    }
     return get_internal(key, root->left);
 }
 
@@ -405,6 +487,13 @@ void rxt_free(rxt_node *root)
     root->right = NULL;
     root->value = NULL;
     free(root);
+}
+
+void* rxt_get_custom(char *key, rxt_node *root, rxt_compare_method compare_method)
+{
+    rxt_node *n = get_internal_custom(key, root, compare_method);
+    if (!n) return NULL;
+    return n->value;
 }
 
 void* rxt_get(char *key, rxt_node *root)

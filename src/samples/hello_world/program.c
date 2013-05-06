@@ -13,13 +13,15 @@ static const char response[] =
   "hello world" CRLF
   ;
 
-char *on_http_request(http_request *request)
+char *get_root(http_request *request)
 {
 	return (char *)response;
 }
 
 int main()
 {
-	hw_http_register_request_callback(on_http_request);
+    char route[] = "/";
+
+	hw_http_add_route(route, get_root);
     hw_http_open("0.0.0.0", 8000);
 }

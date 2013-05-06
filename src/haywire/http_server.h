@@ -1,6 +1,9 @@
 #pragma once
 #include "uv.h"
 #include "http_parser.h"
+#include "trie/radix.h"
+
+extern rxt_node *routes;
 
 void http_stream_on_connect(uv_stream_t* stream, int status);
 uv_buf_t http_stream_on_alloc(uv_handle_t* client, size_t suggested_size);

@@ -25,9 +25,13 @@
           'src/haywire/http_parser.c',
           'src/haywire/http_request.h',
           'src/haywire/http_request.c',
-		  'src/haywire/http_request_context.h',
+          'src/haywire/http_request_context.h',
           'src/haywire/http_server.h',
-          'src/haywire/http_server.c'
+          'src/haywire/http_server.c',
+          'src/haywire/trie/radix.h',
+          'src/haywire/trie/radix.c',
+          'src/haywire/trie/route_compare_method.h',
+          'src/haywire/trie/route_compare_method.c'
         ],
       }, # haywire static library
 

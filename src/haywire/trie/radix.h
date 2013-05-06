@@ -16,8 +16,17 @@ typedef struct rxt_node {
     struct rxt_node *right;
 }rxt_node;
 
+typedef struct rxt_result {
+    int match;
+    rxt_node *node;
+    void *data;
+}rxt_result;
+
+typedef int (*rxt_compare_method)(char *key, rxt_node *root);
+
 int rxt_put(char*, void *, rxt_node*);
 void* rxt_get(char*, rxt_node*);
+void* rxt_get_custom(char*, rxt_node*, rxt_compare_method compare_method);
 void* rxt_delete(char*, rxt_node*);
 void rxt_free(rxt_node *);
 rxt_node *rxt_init();

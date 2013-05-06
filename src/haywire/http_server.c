@@ -12,6 +12,8 @@
 #include "http_request.h"
 #include "http_parser.h"
 #include "http_request_context.h"
+#include "trie/radix.h"
+#include "trie/route_compare_method.h";
 
 #define UVERR(err, msg) fprintf(stderr, "%s: %s\n", msg, uv_strerror(err))
 #define CHECK(r, msg) \
@@ -24,16 +26,22 @@
 static uv_loop_t* uv_loop;
 static uv_tcp_t server;
 static http_parser_settings parser_settings;
-
 static uv_buf_t resbuf;
-
 static int request_num = 1;
 
-http_request_callback http_req_callback;
+rxt_node *routes = NULL;
 
-void hw_http_register_request_callback(http_request_callback callback)
+void hw_http_add_route(char *route, http_request_callback callback)
 {
-	http_req_callback = callback;
+    int i;
+    char *value;
+
+    if (routes == NULL)
+    {
+        routes = rxt_init();
+    }
+    rxt_put(route, callback, routes);
+    printf("Added route %s\n", route); // TODO: Replace with logging instead.
 }
 
 int hw_http_open(char *ipaddress, int port)

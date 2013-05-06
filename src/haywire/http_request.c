@@ -4,6 +4,20 @@
 #include "http_parser.h"
 #include "http_server.h"
 #include "http_request_context.h"
+#include "trie/radix.h"
+#include "trie/route_compare_method.h"
+
+#define CRLF "\r\n"
+static const char response_404[] =
+  "HTTP/1.1 404 Not Found" CRLF
+  "Server: Haywire/master" CRLF
+  "Date: Fri, 26 Aug 2011 00:31:53 GMT" CRLF
+  "Connection: Keep-Alive" CRLF
+  "Content-Type: text/html" CRLF
+  "Content-Length: 16" CRLF
+  CRLF
+  "404 Not Found" CRLF  
+  ;
 
 int http_request_on_message_begin(http_parser* parser)
 {
@@ -40,9 +54,19 @@ int http_request_on_headers_complete(http_parser* parser)
 
 int http_request_on_message_complete(http_parser* parser)
 {
+    char *response;
     http_request_context *context = (http_request_context *)parser->data;
-    char *response = http_req_callback(context->request);
-    http_server_write_response(parser, response);	
+    http_request_callback callback = (http_request_callback)rxt_get_custom(context->request->url, routes, hw_route_compare_method);
+    if (callback != NULL)
+    {
+        response = callback(context->request);
+        http_server_write_response(parser, response);	
+    }
+    else
+    {
+        // 404 Not Found.
+        http_server_write_response(parser, (char *)response_404);
+    }
 
     return 0;
 }

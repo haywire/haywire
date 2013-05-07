@@ -23,3 +23,10 @@
 # Build artifacts
 Default/
 Debug/
+
+lib/libuv/*
+Makefile
+gyp-mac-tool
+haywire.Makefile
+haywire.target.mk
+hello_world.target.mk

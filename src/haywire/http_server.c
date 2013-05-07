@@ -1,7 +1,9 @@
+#ifdef _WIN32
 #pragma comment (lib, "libuv.lib")
 #pragma comment (lib, "ws2_32.lib")
-#pragma comment(lib, "psapi.lib")
-#pragma comment(lib, "Iphlpapi.lib")
+#pragma comment (lib, "psapi.lib")
+#pragma comment (lib, "Iphlpapi.lib")
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,7 +15,7 @@
 #include "http_parser.h"
 #include "http_request_context.h"
 #include "trie/radix.h"
-#include "trie/route_compare_method.h";
+#include "trie/route_compare_method.h"
 
 #define UVERR(err, msg) fprintf(stderr, "%s: %s\n", msg, uv_strerror(err))
 #define CHECK(r, msg) \
@@ -27,14 +29,16 @@ static uv_loop_t* uv_loop;
 static uv_tcp_t server;
 static http_parser_settings parser_settings;
 static uv_buf_t resbuf;
-static int request_num = 1;
+// TODO Review: Not used?
+// static int request_num = 1; 
 
 rxt_node *routes = NULL;
 
 void hw_http_add_route(char *route, http_request_callback callback)
 {
-    int i;
-    char *value;
+    // TODO Review: not used?
+    // int i;
+    // char *value;
 
     if (routes == NULL)
     {
@@ -104,6 +108,7 @@ void http_stream_on_read(uv_stream_t* tcp, ssize_t nread, uv_buf_t buf)
     if (nread >= 0) 
     {
         parsed = http_parser_execute(&context->parser, &parser_settings, buf.base, nread);
+        // TODO Review: comparison of integers of different size: size_t vs ssize_t
         if (parsed < nread) 
         {
             //uv_close((uv_handle_t*) &client->handle, http_stream_on_close);
@@ -140,7 +145,8 @@ int http_server_write_response(http_parser *parser, char *response)
 void http_server_after_write(uv_write_t* req, int status)
 {
     //uv_close((uv_handle_t*)req->handle, on_close);
-    http_parser *parser = (http_parser *)req->data;
-    http_request_context *context = (http_request_context *)parser->data;
+    // TODO Review: not used?
+    // http_parser *parser = (http_parser *)req->data;
+    // http_request_context *context = (http_request_context *)parser->data;
     free(req);
 }

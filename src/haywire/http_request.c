@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include "haywire.h"
 #include "http_request.h"
 #include "http_parser.h"
@@ -24,10 +25,18 @@ int http_request_on_message_begin(http_parser* parser)
     http_request_context *context = (http_request_context *)parser->data;
     if (context->request != NULL)
     {
+        // TODO Review: generates the following warning:
+        // warning: implicit declaration of function
+        // 'free' is invalid in C99
         free(context->request->url);
         free(context->request);
     }
 
+    // TODO Review: generates the following warning:
+    // warning: implicitly declaring library function
+    //  'malloc' with type 'void *(unsigned long)'
+    //
+    // The definition of malloc should probably be included via a header file.
     context->request = (http_request *)malloc(sizeof(http_request));
 
     return 0;

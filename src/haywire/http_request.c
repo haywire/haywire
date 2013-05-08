@@ -19,16 +19,26 @@ static const char response_404[] =
   "404 Not Found" CRLF  
   ;
 
+char * hw_get_header(http_request *request, char *key)
+{
+    return (char *)rxt_get(key, (rxt_node *)request->headers);
+}
+
 int http_request_on_message_begin(http_parser* parser)
 {
     http_request_context *context = (http_request_context *)parser->data;
     if (context->request != NULL)
     {
         free(context->request->url);
+        free(context->request->body);
+        rxt_free((rxt_node *)context->request->headers);
         free(context->request);
     }
 
     context->request = (http_request *)malloc(sizeof(http_request));
+    context->request->url = NULL;
+    context->request->headers = rxt_init();
+    context->request->body = NULL;
 
     return 0;
 }
@@ -36,18 +46,48 @@ int http_request_on_message_begin(http_parser* parser)
 int http_request_on_url(http_parser *parser, const char *at, size_t length)
 {
     http_request_context *context = (http_request_context *)parser->data;
+    char *data = (char *)malloc(sizeof(char) * length + 1);
 
-    char *url = (char *)malloc(sizeof(char) * length + 1);
+    strncpy(data, at, length);
+    data[length] = '\0';
 
-    strncpy(url, at, length);
-    url[length] = '\0';
-
-    context->request->url = url;
+    context->request->url = data;
 
     return 0;
 }
 
+int http_request_on_header_field(http_parser *parser, const char *at, size_t length)
+{
+    http_request_context *context = (http_request_context *)parser->data;
+    char *data = (char *)malloc(sizeof(char) * length + 1);
+
+    strncpy(data, at, length);
+    data[length] = '\0';
+
+    rxt_put("$CURRENT_HEADER", data, (rxt_node *)context->request->headers);
+
+    return 0;
+}
+
+int http_request_on_header_value(http_parser *parser, const char *at, size_t length)
+{
+    http_request_context *context = (http_request_context *)parser->data;
+    char *header = (char *)rxt_get("$CURRENT_HEADER", (rxt_node *)context->request->headers);
+    char *data = (char *)malloc(sizeof(char) * length + 1);
+
+    strncpy(data, at, length);
+    data[length] = '\0';
+
+    rxt_put(header, data, (rxt_node *)context->request->headers);
+    return 0;
+}
+
 int http_request_on_headers_complete(http_parser* parser)
+{
+    return 0;
+}
+
+int http_request_on_body(http_parser *parser, const char *at, size_t length)
 {
     return 0;
 }

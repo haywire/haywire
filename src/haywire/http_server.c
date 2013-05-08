@@ -27,7 +27,6 @@ static uv_loop_t* uv_loop;
 static uv_tcp_t server;
 static http_parser_settings parser_settings;
 static uv_buf_t resbuf;
-static int request_num = 1;
 
 rxt_node *routes = NULL;
 
@@ -48,7 +47,10 @@ int hw_http_open(char *ipaddress, int port)
 {
     int r;
 
+    parser_settings.on_header_field = http_request_on_header_field;
+    parser_settings.on_header_value = http_request_on_header_value;
     parser_settings.on_headers_complete = http_request_on_headers_complete;
+    parser_settings.on_body = http_request_on_body;
     parser_settings.on_message_begin = http_request_on_message_begin;
     parser_settings.on_message_complete = http_request_on_message_complete;
     parser_settings.on_url = http_request_on_url;

@@ -21,5 +21,10 @@
 *.sdf
 
 # Build artifacts
-Default/
+*.Makefile
+*.mk
+bin/gyp/
 Debug/
+Default/
+gyp-*-tool
+Makefile

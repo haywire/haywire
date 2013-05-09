@@ -52,7 +52,7 @@ static __inline int count_bits(char *k1, char *k2, int count)
 
 static int count_common_bits(char *k1, char *k2, int max)
 {
-    int count = max;
+    size_t count = max;
     // XXX SIMD-ify?
     while (*k1 == *k2 && count >= sizeof(int) * 8) {
         int *i1 = (int*)k1, *i2 = (int*)k2;

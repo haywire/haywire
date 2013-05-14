@@ -61,7 +61,7 @@ int hw_http_open(char *ipaddress, int port)
     r = uv_tcp_bind(&server, uv_ip4_addr(ipaddress, port));
     uv_listen((uv_stream_t*)&server, 128, http_stream_on_connect);
 
-    printf("Listening on 0.0.0.0:8000\n");
+    printf("Listening on %s:%d\n", ipaddress, port);
 
     uv_run(uv_loop, UV_RUN_DEFAULT);
     return 0;

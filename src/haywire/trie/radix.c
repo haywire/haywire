@@ -19,6 +19,7 @@
 #include <string.h>
 
 #include "radix.h"
+#include "haywire.h"
 
 #ifndef LSB_FIRST
 static __inline int count_bits(char *k1, char *k2, int count)
@@ -53,7 +54,7 @@ static __inline int count_bits(char *k1, char *k2, int count)
 static int count_common_bits(char *k1, char *k2, int max)
 {
     int count = max;
-    // XXX SIMD-ify?
+    /* XXX SIMD-ify? */
     while (*k1 == *k2 && count >= sizeof(int) * 8) {
         int *i1 = (int*)k1, *i2 = (int*)k2;
         if (*i1 == *i2) {
@@ -107,7 +108,7 @@ static int insert_leaf(rxt_node *newleaf, rxt_node *sibling, rxt_node *parent)
     bit = get_bit_at(newleaf->key, idx);
 
     if (!parent) {
-        // insert at the root, so rotate things like so:
+        /* insert at the root, so rotate things like so: */
 /*
            /\    to     /\
           1  2         /\ 3
@@ -138,13 +139,13 @@ static int insert_leaf(rxt_node *newleaf, rxt_node *sibling, rxt_node *parent)
     }
 
     if (idx < parent->pos) {
-        // use the parent as a sibling
+        /* use the parent as a sibling */
         return insert_leaf(newleaf, parent, parent->parent);
     } else {
-        // otherwise, add newleaf as a child of inner
+        /* otherwise, add newleaf as a child of inner */
 
-        // Check for duplicates.
-        // FIXME feels hackish; do this properly.
+        /* Check for duplicates. */
+        /* FIXME feels hackish; do this properly. */
         if (newleaf->pos == sibling->pos &&
             !strncmp(newleaf->key, sibling->key, newleaf->pos)) {
             free(newleaf);
@@ -169,7 +170,7 @@ static int insert_leaf(rxt_node *newleaf, rxt_node *sibling, rxt_node *parent)
             inner->left = newleaf;
         }
 
-        // now find out which branch of parent to assign inner
+        /* now find out which branch of parent to assign inner */
         if (parent->left == sibling)
             parent->left = inner;
         else if (parent->right == sibling)
@@ -182,10 +183,10 @@ static int insert_leaf(rxt_node *newleaf, rxt_node *sibling, rxt_node *parent)
     return 0;
 }
 
-// color: 1 for leaf, 0 for inner
+/* color: 1 for leaf, 0 for inner */
 static int insert_internal(rxt_node *newleaf, rxt_node *n)
 {
-    // FIRST: check for common bits
+    /* FIRST: check for common bits */
     rxt_node *left = n->left, *right = n->right;
     int bits   = count_common_bits(newleaf->key, left->key,
                                    rdx_min(newleaf->pos, left->pos));
@@ -208,7 +209,7 @@ static int insert_internal(rxt_node *newleaf, rxt_node *n)
         return insert_internal(newleaf, right);
     }
 
-    return -1; // this should never happen
+    return -1; /* this should never happen */
 }
 
 static __inline int keylen(char *str)
@@ -238,21 +239,21 @@ int rxt_put(char *key, void *value, rxt_node *n)
     rxt_node *newleaf;
     NEWLEAF(newleaf, key, value);
 
-    // this special case takes care of the first two entries
+    /* this special case takes care of the first two entries */
     if (!(n->left || n->right)) {
         rxt_node *sib;
         int bits;
-        // create root
+        /* create root */
         if (!n->value) {
-            // attach root
+            /* attach root */
             n->color = 2;
             n->value = newleaf;
             return 0;
         }
-        // else convert root to inner and attach leaves
+        /* else convert root to inner and attach leaves */
         sib = (rxt_node *)n->value;
 
-        // count bits in common
+        /* count bits in common */
         bits = count_common_bits(key, sib->key,
                     rdx_min(newleaf->pos, sib->pos));
 
@@ -271,7 +272,7 @@ int rxt_put(char *key, void *value, rxt_node *n)
         return 0;
     }
 
-    newleaf->parent = NULL; // null for now
+    newleaf->parent = NULL; /* null for now */
 
     return insert_internal(newleaf, n);
 
@@ -312,68 +313,105 @@ static rxt_node* get_internal_custom(char *key, rxt_node *root, rxt_compare_meth
     return get_internal_custom(key, root->left, compare_method);
 }
 
+keyvalue_enumerator* rxt_enumerator_init(rxt_node *node)
+{
+    keyvalue_enumerator* enumerator = malloc(sizeof(enumerator));
+    enumerator->node = node;
+    enumerator->leftFinished = false;
+    enumerator->rightFinished = false;
+    enumerator->returned = false;
+    enumerator->previousState = NULL;
+    return enumerator;
+}
+
+rxt_node* rxt_next_node(keyvalue_enumerator* enumerator) 
+{    
+    rxt_node *currentNode = enumerator->node;
+    rxt_node *nextNode = NULL;
+    keyvalue_enumerator* currentState;
+    
+    if (!enumerator->leftFinished) 
+    {
+        /* If we haven't checked the left, set that as checked and use the left node as our next node */
+        enumerator->leftFinished = true;
+        if (currentNode) 
+            nextNode = currentNode->left;
+    } 
+    else if (!enumerator->rightFinished) 
+    {
+        /* Same for if we haven't checked the right */
+        enumerator->rightFinished = true;
+        if (currentNode) 
+            nextNode = currentNode->right;  
+    } 
+    else 
+    {
+        /* If we've checked them both, set the current node to NULL */
+        currentNode = NULL;
+    }
+    
+    /* If the current node is set (i.e. it exists and we haven't checked both sides) then we */
+    /* Create the new state with our next node and assign that to our state pointer */
+    if (currentNode) 
+    {
+        keyvalue_enumerator* newState;
+        newState = rxt_enumerator_init(nextNode);
+        currentState = enumerator;
+        enumerator = newState;
+        
+        /* We may be at this state multiple times, but only want to return the node once */
+        if (!currentState->returned) 
+        {
+            currentState->returned = true;
+            return currentNode;        
+        } 
+        else 
+        {
+            /* If we've been at the state before, continue execution until we reach the next node to return */
+            return rxt_next_node(enumerator);
+        }
+    /* If the node is NULL (i.e. we've reached beyond a leaf and/or checked both branches) */
+    } 
+    else 
+    {
+        /* If there is no previous state, we've reached the end of the tree */
+        if (!enumerator->previousState) 
+            return NULL;
+        
+        /* Jump back up to the previous state and then continue running until we reach a returnable node */
+        enumerator = enumerator->previousState;
+        /* free(currentState->previousState); */
+        /* free(currentState); */
+        return rxt_next_node(enumerator);
+    }
+}
+
+
+
+
+
+
+
 static rxt_node* get_internal(char *key, rxt_node *root)
 {
-    int equal = 1;
-    char *route_token;
-    char *route_token_ptr;
-    char *request_token;
-    char *request_token_ptr;
-    char prefix;
-
     if (!root) return NULL;
-
-    if (root->color) 
-    {
-        if (2 == root->color) 
-        {
-            root = (rxt_node *)root->value;
-        }
-
-        route_token = strtok_r(root->key, "/", &route_token_ptr);
-        request_token = strtok_r(key, "/", &request_token_ptr);
-        while (route_token != NULL && request_token != NULL)
-        {
-            if (route_token == NULL || request_token == NULL)
-                break;
-
-            prefix = *route_token;
-            if (prefix == '$')
-            {
-                // Variable substitution.
-            }
-            else
-            {
-                if (strncasecmp(route_token, request_token, 0))
-                {
-                    equal = 0;
-                    break;
-                }
-            }
-            
-            //printf ("ROUTE:%s\tREQUEST:%s\n", route_token, request_token);
-            route_token = strtok_r(NULL, "/", &route_token_ptr);
-            request_token = strtok_r(NULL, "/", &request_token_ptr);
-        }
-
-        if (equal)
-        {
+    
+    if (root->color) {
+        if (2 == root->color) root = root->value;
+        if (!strncmp(key, root->key, root->pos))
             return root;
-        }
         return NULL;
     }
-
+    
     if (get_bit_at(key, root->pos))
-    {
         return get_internal(key, root->right);
-    }
     return get_internal(key, root->left);
 }
 
 static void reset_key(char *key, char *newkey, rxt_node *n)
 {
-    // This should only be propagated up inner nodes.
-    // Right now the algorithm guarantees this, but it is unchecked.
+    /* This should only be propagated up inner nodes. */
+    /* Right now the algorithm guarantees this, but it is unchecked. */
 
     if (key == n->key) {
         n->key = newkey;
@@ -391,7 +429,7 @@ static void *delete_internal(rxt_node *n, rxt_node *sibling)
     rxt_node *parent = n->parent;
     void *v = n->value;
 
-    // TODO ascii art
+    /* TODO ascii art */
     if (sibling->color) {
         parent->value = sibling;
         parent->left = NULL;
@@ -418,12 +456,12 @@ void* rxt_delete(char *key, rxt_node *root)
     rxt_node *n = get_internal(key, root);
     void *v;
     char *newkey = NULL;
-    if (!n) return NULL; // nonexistent
+    if (!n) return NULL; /* nonexistent */
 
     v = n->value;
 
-    // remove both the node and the parent inner node
-    // XXX TODO FIXME Still somewhat broken. Figure out.
+    /* remove both the node and the parent inner node */
+    /* XXX TODO FIXME Still somewhat broken. Figure out. */
     parent = n->parent;
     grandparent = parent->parent;
 
@@ -443,10 +481,10 @@ void* rxt_delete(char *key, rxt_node *root)
         return v;
     }
 
-    // properly move around pointers and shit
-    // TODO ascii art
+    /* properly move around pointers and shit */
+    /* TODO ascii art */
     if (grandparent->left == n->parent) {
-        newkey = grandparent->right->key; // not sure if this is correct
+        newkey = grandparent->right->key; /* not sure if this is correct */
         if (parent->left == n) {
             grandparent->left = parent->right;
             parent->right->parent = grandparent;
@@ -472,7 +510,7 @@ void* rxt_delete(char *key, rxt_node *root)
     parent->left = NULL;
     parent->right = NULL;
     free(parent);
-    free(n); // we don't dynamically allocate node
+    free(n); /* we don't dynamically allocate node */
 
     return v;
 }
@@ -509,4 +547,23 @@ rxt_node *rxt_init()
     if (!root) return NULL;
     memset(root, 0, sizeof(rxt_node));
     return root;
+}
+
+void rxt_print_in_order(rxt_node *root)
+{
+    if (!root)
+    {
+        return;
+    }
+    if (root->color) 
+    {
+        if (2 == root->color)
+        {
+                root = root->value;
+        }
+        printf("%s: %s\n", root->key, (char*)root->value);
+        return;
+    }
+    rxt_print_in_order(root->left);
+    rxt_print_in_order(root->right);
 }

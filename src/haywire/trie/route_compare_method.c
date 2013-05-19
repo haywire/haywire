@@ -21,7 +21,6 @@ int hw_route_compare_method(char *key, rxt_node *root)
     char *request_token_ptr;
     char prefix;
 
-    //char *route_key = (char *)malloc(strlen(root->key) + 1 * sizeof(char));
     strcpy(route_key, root->key);
 
     route_token = strtok_r(route_key, "/", &route_token_ptr);
@@ -35,14 +34,13 @@ int hw_route_compare_method(char *key, rxt_node *root)
         prefix = *route_token;
         if (prefix == '$')
         {
-            // TODO: Do request URL variable substitution.
+            /* TODO: Do request URL variable substitution. */
         }
         else
         {
             if (!strncasecmp(route_token, request_token, 0))
             {
                 equal = 1;
-                //break;
             }
             else
             {
@@ -51,7 +49,7 @@ int hw_route_compare_method(char *key, rxt_node *root)
             }
         }
             
-        //printf ("ROUTE:%s\tREQUEST:%s\n", route_token, request_token);
+        /* printf ("ROUTE:%s\tREQUEST:%s\n", route_token, request_token); */
         route_token = strtok_r(NULL, "/", &route_token_ptr);
         request_token = strtok_r(NULL, "/", &request_token_ptr);
     }
@@ -68,7 +66,5 @@ int hw_route_compare_method(char *key, rxt_node *root)
     {
         equal = 0;
     }
-
-    //free(route_key);
     return equal;
 }

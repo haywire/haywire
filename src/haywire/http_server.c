@@ -13,7 +13,7 @@
 #include "http_parser.h"
 #include "http_request_context.h"
 #include "trie/radix.h"
-#include "trie/route_compare_method.h";
+#include "trie/route_compare_method.h"
 
 #define UVERR(err, msg) fprintf(stderr, "%s: %s\n", msg, uv_strerror(err))
 #define CHECK(r, msg) \
@@ -40,12 +40,25 @@ void hw_http_add_route(char *route, http_request_callback callback)
         routes = rxt_init();
     }
     rxt_put(route, callback, routes);
-    printf("Added route %s\n", route); // TODO: Replace with logging instead.
+    printf("Added route %s\n", route); /* TODO: Replace with logging instead. */
 }
 
 int hw_http_open(char *ipaddress, int port)
 {
     int r;
+
+    /*
+    rxt_node *node;
+    void *values[3] = {NULL, NULL, NULL};
+    rxt_node *headers = rxt_init();
+    rxt_node *current;
+    rxt_put("Server", "Haywire/master", headers);
+    rxt_put("Date", "Fri, 26 Aug 2011 00:31:53 GMT", headers);
+    rxt_put("Connection", "Keep-Alive", headers);
+
+    rxt_print_in_order(headers);
+    printf("\n\n\n\n");
+    */
 
     parser_settings.on_header_field = http_request_on_header_field;
     parser_settings.on_header_value = http_request_on_header_value;
@@ -95,6 +108,13 @@ uv_buf_t http_stream_on_alloc(uv_handle_t* client, size_t suggested_size)
 void http_stream_on_close(uv_handle_t* handle)
 {
     http_request_context* context = (http_request_context*)handle->data;
+    if (context->request != NULL)
+    {
+        free(context->request->url);
+        free(context->request->body);
+        rxt_free((rxt_node *)context->request->headers);
+        free(context->request);
+    }
     free(context);
 }
 
@@ -108,7 +128,7 @@ void http_stream_on_read(uv_stream_t* tcp, ssize_t nread, uv_buf_t buf)
         parsed = http_parser_execute(&context->parser, &parser_settings, buf.base, nread);
         if (parsed < nread) 
         {
-            //uv_close((uv_handle_t*) &client->handle, http_stream_on_close);
+            /* uv_close((uv_handle_t*) &client->handle, http_stream_on_close); */
         }
     } 
     else 
@@ -123,26 +143,40 @@ void http_stream_on_read(uv_stream_t* tcp, ssize_t nread, uv_buf_t buf)
     free(buf.base);
 }
 
-int http_server_write_response(http_parser *parser, char *response) 
+int http_server_write_response(http_parser *parser, http_response *response) 
 {
     int r;
     http_request_context *context = (http_request_context *)parser->data;
     uv_write_t* write_req = (uv_write_t *)malloc(sizeof(*write_req));
 
-	resbuf.base = response;
-	resbuf.len = strlen(response) + 1;
+    resbuf.base = response->buffer;
+    resbuf.len = strlen(response->buffer) + 1;
 
-    write_req->data = parser->data;
+    write_req->data = response;
 
     r = uv_write(write_req, (uv_stream_t*)&context->stream, &resbuf, 1, http_server_after_write);	
 
     return 0;
 }
 
-void http_server_after_write(uv_write_t* req, int status)
+void http_server_after_write(uv_write_t* write, int status)
 {
-    //uv_close((uv_handle_t*)req->handle, on_close);
-    http_parser *parser = (http_parser *)req->data;
+    /* uv_close((uv_handle_t*)req->handle, on_close); */
+    http_response *response = (http_response *)write->data;
+    
+    /*
     http_request_context *context = (http_request_context *)parser->data;
-    free(req);
+    
+    free(response->body);
+    free(response->buffer);
+    free(response->headers);
+    free(response);
+    */
+    
+    /* if (write->data != NULL) */
+    if (response != NULL)
+    {
+        hw_free_response(response);
+    }
+    free(write);
 }

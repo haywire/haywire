@@ -315,7 +315,7 @@ static rxt_node* get_internal_custom(char *key, rxt_node *root, rxt_compare_meth
 
 keyvalue_enumerator* rxt_enumerator_init(rxt_node *node)
 {
-    keyvalue_enumerator* enumerator = malloc(sizeof(enumerator));
+    keyvalue_enumerator* enumerator = malloc(sizeof(keyvalue_enumerator));
     enumerator->node = node;
     enumerator->leftFinished = false;
     enumerator->rightFinished = false;

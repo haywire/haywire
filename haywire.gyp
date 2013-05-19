@@ -33,6 +33,14 @@
           'src/haywire/trie/route_compare_method.h',
           'src/haywire/trie/route_compare_method.c'
         ],
+
+        'conditions': [
+          [ 'OS=="linux"', {
+            'cflags': [
+              '-std=c99',
+            ]
+          }],
+        ],
       }, # haywire static library
 
       ########################################

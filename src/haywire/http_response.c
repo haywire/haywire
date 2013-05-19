@@ -21,6 +21,10 @@ void hw_free_response(http_response *response)
     {
         free(response->buffer);
     }
+    if (response->body != NULL)
+    {
+        free(response->body);
+    }
     /* rxt_free(response->headers); */
     free(response);
 }

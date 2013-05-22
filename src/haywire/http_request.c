@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "haywire.h"
 #include "http_request.h"
 #include "http_parser.h"

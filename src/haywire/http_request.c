@@ -115,7 +115,7 @@ int http_request_on_message_complete(http_parser* parser)
         length += bytes_added(sprintf(response->buffer + length, "Date: Fri, 26 Aug 2011 00:31:53 GMT" CRLF));
         length += bytes_added(sprintf(response->buffer + length, "Connection: Keep-Alive" CRLF));
         length += bytes_added(sprintf(response->buffer + length, "Content-Type: Haywire/master" CRLF));
-        length += bytes_added(sprintf(response->buffer + length, "Content-Length: %d" CRLF CRLF, strlen(response->body) + 3));
+        length += bytes_added(sprintf(response->buffer + length, "Content-Length: %lu" CRLF CRLF, strlen(response->body) + 3));
         length += bytes_added(sprintf(response->buffer + length, "%s" CRLF, response->body));
 
         http_server_write_response(parser, response);

@@ -1,3 +1,4 @@
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -60,6 +61,8 @@ http_response *get_root(http_request *request)
 int main()
 {
     char route[] = "/";
+
+    signal(SIGPIPE, SIG_IGN);
 
     hw_http_add_route(route, get_root);
     hw_http_open("0.0.0.0", 8000);

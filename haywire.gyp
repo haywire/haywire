@@ -15,7 +15,7 @@
         ],
 
         'include_dirs': [
-		  './include',
+          './include',
           './lib/libuv/include',
         ],
 

@@ -3,6 +3,10 @@
 #pragma comment(lib, "psapi.lib")
 #pragma comment(lib, "Iphlpapi.lib")
 
+#ifdef PLATFORM_POSIX
+#include <signal.h>
+#endif // PLATFORM_POSIX
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -54,6 +58,10 @@ int hw_http_open(char *ipaddress, int port)
     parser_settings.on_message_begin = http_request_on_message_begin;
     parser_settings.on_message_complete = http_request_on_message_complete;
     parser_settings.on_url = http_request_on_url;
+    
+#ifdef PLATFORM_POSIX
+    signal(SIGPIPE, SIG_IGN);
+#endif // PLATFORM_POSIX
   
     uv_loop = uv_default_loop();
     r = uv_tcp_init(uv_loop, &server);

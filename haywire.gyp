@@ -14,6 +14,26 @@
           './lib/libuv/uv.gyp:libuv',
         ],
 
+        'conditions': [
+          ['OS=="linux"', {
+            'defines': [
+              'PLATFORM_LINUX',
+            ],
+            'cflags': [
+              '-std=c99',
+            ],
+          }],
+          ['OS=="win"', {
+            'defines': [
+              'PLATFORM_WINDOWS',
+            ],
+          }, { # OS != "win",
+            'defines': [
+              'PLATFORM_POSIX',
+            ],
+          }]
+        ],
+
         'include_dirs': [
           './include',
           './lib/libuv/include',
@@ -34,13 +54,6 @@
           'src/haywire/trie/route_compare_method.c'
         ],
 
-        'conditions': [
-          [ 'OS=="linux"', {
-            'cflags': [
-              '-std=c99',
-            ]
-          }],
-        ],
       }, # haywire static library
 
       ########################################

@@ -1,7 +1,0 @@
-[submodule "lib/libuv"]
-	path = lib/libuv
-	url = git://github.com/joyent/libuv.git
-[submodule "bin/wrk"]
-	path = bin/wrk
-	branch = pipeline
-	url = git://github.com/wg/wrk.git

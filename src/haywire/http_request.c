@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "haywire.h"
 #include "http_request.h"
 #include "http_parser.h"
@@ -19,6 +21,14 @@ static const char response_404[] =
   "404 Not Found" CRLF  
   ;
 
+void free_http_request(http_request* request)
+{
+    free(request->url);
+    free(request->body);
+    rxt_free((rxt_node *)request->headers);
+    free(request);
+}
+
 char * hw_get_header(http_request *request, char *key)
 {
     return (char *)rxt_get(key, (rxt_node *)request->headers);
@@ -27,14 +37,6 @@ char * hw_get_header(http_request *request, char *key)
 int http_request_on_message_begin(http_parser* parser)
 {
     http_request_context *context = (http_request_context *)parser->data;
-    if (context->request != NULL)
-    {
-        free(context->request->url);
-        free(context->request->body);
-        rxt_free((rxt_node *)context->request->headers);
-        free(context->request);
-    }
-
     context->request = (http_request *)malloc(sizeof(http_request));
     context->request->url = NULL;
     context->request->headers = rxt_init();
@@ -108,5 +110,6 @@ int http_request_on_message_complete(http_parser* parser)
         http_server_write_response(parser, (char *)response_404);
     }
 
+    free_http_request(context->request);
     return 0;
 }

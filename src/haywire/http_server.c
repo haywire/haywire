@@ -149,6 +149,5 @@ void http_server_after_write(uv_write_t* req, int status)
 {
     //uv_close((uv_handle_t*)req->handle, on_close);
     http_parser *parser = (http_parser *)req->data;
-    http_request_context *context = (http_request_context *)parser->data;
     free(req);
 }

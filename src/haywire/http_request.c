@@ -73,14 +73,17 @@ int http_request_on_header_field(http_parser *parser, const char *at, size_t len
 
 int http_request_on_header_value(http_parser *parser, const char *at, size_t length)
 {
-    http_request_context *context = (http_request_context *)parser->data;
-    char *header = (char *)rxt_get("$CURRENT_HEADER", (rxt_node *)context->request->headers);
-    char *data = (char *)malloc(sizeof(char) * length + 1);
+    if (length > 0)
+    {
+        http_request_context *context = (http_request_context *)parser->data;
+        char *header = (char *)rxt_get("$CURRENT_HEADER", (rxt_node *)context->request->headers);
+        char *data = (char *)malloc(sizeof(char) * length + 1);
 
-    strncpy(data, at, length);
-    data[length] = '\0';
+        strncpy(data, at, length);
+        data[length] = '\0';
 
-    rxt_put(header, data, (rxt_node *)context->request->headers);
+        rxt_put(header, data, (rxt_node *)context->request->headers);
+    }
     return 0;
 }
 
@@ -111,5 +114,6 @@ int http_request_on_message_complete(http_parser* parser)
     }
 
     free_http_request(context->request);
+    context->request = NULL;
     return 0;
 }

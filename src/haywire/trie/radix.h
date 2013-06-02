@@ -30,5 +30,6 @@ void* rxt_get_custom(char*, rxt_node*, rxt_compare_method compare_method);
 void* rxt_delete(char*, rxt_node*);
 void rxt_free(rxt_node *);
 rxt_node *rxt_init();
+void rxt_print_in_order(rxt_node *root);
 
 #endif // RADIXTREE

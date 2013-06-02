@@ -15,13 +15,13 @@ static const char response[] =
 
 char *get_root(http_request *request)
 {
-	return (char *)response;
+    return (char *)response;
 }
 
 int main()
 {
     char route[] = "/";
 
-	hw_http_add_route(route, get_root);
+    hw_http_add_route(route, get_root);
     hw_http_open("0.0.0.0", 8000);
 }

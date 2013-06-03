@@ -357,16 +357,17 @@ static void *delete_internal(rxt_node *n, rxt_node *sibling)
         parent->right = NULL;
         parent->color = 2;
         parent->pos = 0;
+        reset_key(n->key, sibling->key, parent);
     } else {
         parent->left = sibling->left;
         parent->right = sibling->right;
         parent->pos = sibling->pos;
         sibling->left->parent = parent;
         sibling->right->parent = parent;
+        reset_key(n->key, sibling->key, parent);
         free(sibling);
     }
     
-    reset_key(n->key, sibling->key, parent);
     free(n);
     return v;
 }

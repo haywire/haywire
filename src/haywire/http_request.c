@@ -21,6 +21,31 @@ static const char response_404[] =
   "404 Not Found" CRLF  
   ;
 
+void delete_request_header(http_parser *parser, char *key)
+{
+    http_request_context *context = (http_request_context *)parser->data;
+    void* result = rxt_get(key, context->request->headers);
+    if (result != NULL)
+    {
+        rxt_delete(key, context->request->headers);
+    }
+    free(result);
+}
+
+void put_request_header(http_parser *parser, char *key, const char *value, size_t length)
+{
+    if (length > 0) return;
+
+    delete_request_header(parser, key);
+
+    char *data = (char *)malloc(sizeof(char) * length + 1);
+    strncpy(data, value, length);
+    data[length] = '\0';
+
+    http_request_context *context = (http_request_context *)parser->data;
+    rxt_put(key, data, (rxt_node *)context->request->headers);
+}
+
 void free_http_request(http_request* request)
 {
     free(request->url);
@@ -60,52 +85,19 @@ int http_request_on_url(http_parser *parser, const char *at, size_t length)
 
 int http_request_on_header_field(http_parser *parser, const char *at, size_t length)
 {
-    if (length > 0)
-    {
-        http_request_context *context = (http_request_context *)parser->data;
-        char *data = (char *)malloc(sizeof(char) * length + 1);
-
-        void* result = rxt_get("$CURRENT_HEADER", context->request->headers);
-        if (result != NULL)
-        {
-            rxt_delete("$CURRENT_HEADER", context->request->headers);
-        }
-        free(result);
-        
-        strncpy(data, at, length);
-        data[length] = '\0';
-
-        rxt_put("$CURRENT_HEADER", data, (rxt_node *)context->request->headers);
-    }
+    put_request_header(parser, "$CURRENT_HEADER", at, length);
     return 0;
 }
 
 int http_request_on_header_value(http_parser *parser, const char *at, size_t length)
 {
-    if (length > 0)
-    {
-        http_request_context *context = (http_request_context *)parser->data;
-        char *header = (char *)rxt_get("$CURRENT_HEADER", (rxt_node *)context->request->headers);
-        char *data = (char *)malloc(sizeof(char) * length + 1);
-
-        strncpy(data, at, length);
-        data[length] = '\0';
-        
-        rxt_put(header, data, (rxt_node *)context->request->headers);
-    }
+    put_request_header(parser, "$CURRENT_HEADER", at, length);
     return 0;
 }
 
 int http_request_on_headers_complete(http_parser* parser)
 {
-    http_request_context *context = (http_request_context *)parser->data;
-    
-    void* result = rxt_get("$CURRENT_HEADER", context->request->headers);
-    if (result != NULL)
-    {
-        rxt_delete("$CURRENT_HEADER", context->request->headers);
-    }
-    free(result);
+    delete_request_header(parser, "$CURRENT_HEADER");
     return 0;
 }
 

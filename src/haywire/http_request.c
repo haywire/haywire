@@ -60,11 +60,19 @@ int http_request_on_url(http_parser *parser, const char *at, size_t length)
 
 int http_request_on_header_field(http_parser *parser, const char *at, size_t length)
 {
+    char *oldh = NULL;
     http_request_context *context = (http_request_context *)parser->data;
     char *data = (char *)malloc(sizeof(char) * length + 1);
 
     strncpy(data, at, length);
     data[length] = '\0';
+
+    oldh = (char *)rxt_get("$CURRENT_HEADER", (rxt_node *)context->request->headers);
+
+    if ( oldh != NULL ) {
+	rxt_delete("$CURRENT_HEADER", context->request->headers );
+	free(oldh);
+    }
 
     rxt_put("$CURRENT_HEADER", data, (rxt_node *)context->request->headers);
 

@@ -5,6 +5,7 @@ typedef struct
 	char *url;
     void *headers;
     char *body;
+    char *current_header;
 } http_request;
 
 typedef char* (*http_request_callback)(http_request *request);

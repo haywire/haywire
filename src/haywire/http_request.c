@@ -41,6 +41,7 @@ int http_request_on_message_begin(http_parser* parser)
     context->request->url = NULL;
     context->request->headers = rxt_init();
     context->request->body = NULL;
+    context->request->current_header = NULL;
 
     return 0;
 }
@@ -65,30 +66,33 @@ int http_request_on_header_field(http_parser *parser, const char *at, size_t len
 
     strncpy(data, at, length);
     data[length] = '\0';
-
-    rxt_put("$CURRENT_HEADER", data, (rxt_node *)context->request->headers);
+	context->request->current_header = data;
 
     return 0;
 }
 
 int http_request_on_header_value(http_parser *parser, const char *at, size_t length)
 {
+    http_request_context *context = (http_request_context *)parser->data;
     if (length > 0)
     {
-        http_request_context *context = (http_request_context *)parser->data;
-        char *header = (char *)rxt_get("$CURRENT_HEADER", (rxt_node *)context->request->headers);
         char *data = (char *)malloc(sizeof(char) * length + 1);
 
         strncpy(data, at, length);
         data[length] = '\0';
 
-        rxt_put(header, data, (rxt_node *)context->request->headers);
+        rxt_put(context->request->current_header, data, (rxt_node *)context->request->headers);
     }
+	free(context->request->current_header);
+	context->request->current_header = NULL;
     return 0;
 }
 
 int http_request_on_headers_complete(http_parser* parser)
 {
+    http_request_context *context = (http_request_context *)parser->data;
+	free(context->request->current_header);
+	context->request->current_header = NULL;
     return 0;
 }
 

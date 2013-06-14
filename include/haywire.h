@@ -5,7 +5,10 @@ typedef struct
 	char *url;
     void *headers;
     char *body;
-    char *current_header;
+    char current_header_key[10000024];
+    int current_header_key_length;
+    char current_header_value[10000024];
+    int current_header_value_length;
 } http_request;
 
 typedef char* (*http_request_callback)(http_request *request);

@@ -51,7 +51,11 @@
           'src/haywire/trie/radix.h',
           'src/haywire/trie/radix.c',
           'src/haywire/trie/route_compare_method.h',
-          'src/haywire/trie/route_compare_method.c'
+          'src/haywire/trie/route_compare_method.c',
+          'src/haywire/trie/bftree_map.h',
+          'src/haywire/trie/bftree_set.h',
+          'src/haywire/trie/buffered_tree.c',
+          'src/haywire/trie/buffered_tree.h',
         ],
 
       }, # haywire static library

@@ -8,6 +8,7 @@
 #include "http_request_context.h"
 #include "trie/radix.h"
 #include "trie/route_compare_method.h"
+#include "trie/bftree_map.h"
 
 #define CRLF "\r\n"
 static const char response_404[] =
@@ -21,11 +22,13 @@ static const char response_404[] =
   "404 Not Found" CRLF  
   ;
 
+int last_was_value;
+
 void free_http_request(http_request* request)
 {
     free(request->url);
     free(request->body);
-    rxt_free((rxt_node *)request->headers);
+    bftmap_free(request->headers);
     free(request);
 }
 
@@ -39,9 +42,10 @@ int http_request_on_message_begin(http_parser* parser)
     http_request_context *context = (http_request_context *)parser->data;
     context->request = (http_request *)malloc(sizeof(http_request));
     context->request->url = NULL;
-    context->request->headers = rxt_init();
+    context->request->headers = bftmap_create();
     context->request->body = NULL;
-    context->request->current_header = NULL;
+    context->request->current_header_key_length = 0;
+    context->request->current_header_value_length = 0;
 
     return 0;
 }
@@ -62,37 +66,53 @@ int http_request_on_url(http_parser *parser, const char *at, size_t length)
 int http_request_on_header_field(http_parser *parser, const char *at, size_t length)
 {
     http_request_context *context = (http_request_context *)parser->data;
-    char *data = (char *)malloc(sizeof(char) * length + 1);
 
-    strncpy(data, at, length);
-    data[length] = '\0';
-	context->request->current_header = data;
-
+    if (last_was_value && context->request->current_header_key_length > 0)
+    {
+        // Save last read header key/value pair.
+        bftmap_put(context->request->headers, context->request->current_header_key, context->request->current_header_key_length, strdup(context->request->current_header_value));
+        
+        /* Start of a new header */
+        context->request->current_header_key_length = 0;  
+    }
+    memcpy((char *)&context->request->current_header_key[context->request->current_header_key_length], at, length);
+    context->request->current_header_key_length += length;
+    context->request->current_header_key[context->request->current_header_key_length] = '\0';
+    last_was_value = 0;
     return 0;
 }
 
 int http_request_on_header_value(http_parser *parser, const char *at, size_t length)
 {
     http_request_context *context = (http_request_context *)parser->data;
-    if (length > 0)
+    
+    if (!last_was_value && context->request->current_header_value_length > 0)
     {
-        char *data = (char *)malloc(sizeof(char) * length + 1);
-
-        strncpy(data, at, length);
-        data[length] = '\0';
-
-        rxt_put(context->request->current_header, data, (rxt_node *)context->request->headers);
+        /* Start of a new header */
+        context->request->current_header_value_length = 0;
     }
-	free(context->request->current_header);
-	context->request->current_header = NULL;
+    memcpy((char *)&context->request->current_header_value[context->request->current_header_value_length], at, length);
+    context->request->current_header_value_length += length;
+    context->request->current_header_value[context->request->current_header_value_length] = '\0';
+    last_was_value = 1;
     return 0;
 }
 
 int http_request_on_headers_complete(http_parser* parser)
 {
     http_request_context *context = (http_request_context *)parser->data;
-	free(context->request->current_header);
-	context->request->current_header = NULL;
+    
+    if (context->request->current_header_key_length > 0)
+    {
+        if (context->request->current_header_value_length > 0)
+        {
+            bftmap_put(context->request->headers, context->request->current_header_key, context->request->current_header_key_length, strdup(context->request->current_header_value));
+        }
+        context->request->current_header_key[context->request->current_header_key_length] = '\0';
+        context->request->current_header_value[context->request->current_header_value_length] = '\0';
+    }
+    context->request->current_header_key_length = 0;
+    context->request->current_header_value_length = 0;
     return 0;
 }
 

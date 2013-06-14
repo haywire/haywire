@@ -122,6 +122,10 @@ void http_stream_on_read(uv_stream_t* tcp, ssize_t nread, uv_buf_t buf)
         if (err.code != UV_EOF) 
         {
             UVERR(err, "read");
+            if (context->request != NULL)
+            {
+                free_http_request(context->request);
+            }
         }
         uv_close((uv_handle_t*) &context->stream, http_stream_on_close);
     }

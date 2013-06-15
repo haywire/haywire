@@ -34,6 +34,22 @@ static http_parser_settings parser_settings;
 
 rxt_node *routes = NULL;
 
+http_request_context* create_http_context()
+{
+    http_request_context* context = (http_request_context *)malloc(sizeof(http_request_context));
+    context->request = NULL;
+    return context;
+}
+
+void free_http_context(http_request_context* context)
+{
+    if (context->request != NULL)
+    {
+        free_http_request(context->request);
+    }
+    free(context);
+}
+
 void hw_http_add_route(char *route, http_request_callback callback)
 {
     if (routes == NULL)
@@ -76,14 +92,15 @@ void http_stream_on_connect(uv_stream_t* stream, int status)
 {
     int r;
 
-    http_request_context *context = (http_request_context *)malloc(sizeof(http_request_context));
+    //http_request_context *context = (http_request_context *)malloc(sizeof(http_request_context));
+    http_request_context* context = create_http_context();
 
     uv_tcp_init(uv_loop, &context->stream);
     http_parser_init(&context->parser, HTTP_REQUEST);
 
     context->parser.data = context;
     context->stream.data = context;
-    context->request = NULL;
+    //context->request = NULL;
 
     r = uv_accept(stream, (uv_stream_t*)&context->stream);
     r = uv_read_start((uv_stream_t*)&context->stream, http_stream_on_alloc, http_stream_on_read);
@@ -121,7 +138,7 @@ void http_stream_on_read(uv_stream_t* tcp, ssize_t nread, uv_buf_t buf)
         uv_err_t err = uv_last_error(uv_loop);
         if (err.code != UV_EOF) 
         {
-            UVERR(err, "read");
+            //UVERR(err, "read");
             if (context->request != NULL)
             {
                 free_http_request(context->request);
@@ -152,6 +169,5 @@ int http_server_write_response(http_parser *parser, char *response)
 void http_server_after_write(uv_write_t* req, int status)
 {
     //uv_close((uv_handle_t*)req->handle, on_close);
-    http_parser *parser = (http_parser *)req->data;
     free(req);
 }

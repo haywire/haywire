@@ -9,4 +9,8 @@ typedef struct
     http_parser parser;
     uv_write_t write_req;
     http_request *request;
+    char current_header_key[1024];
+    int current_header_key_length;
+    char current_header_value[1024];
+    int current_header_value_length;
 } http_request_context;

@@ -24,6 +24,17 @@ static const char response_404[] =
 
 int last_was_value;
 
+http_request* create_http_request(http_request_context* context)
+{
+    http_request* request = malloc(sizeof(http_request));
+    request->url = NULL;
+    request->headers = bftmap_create();
+    request->body = NULL;
+    context->current_header_key_length = 0;
+    context->current_header_value_length = 0;
+    return request;
+}
+
 void free_http_request(http_request* request)
 {
     free(request->url);
@@ -32,21 +43,16 @@ void free_http_request(http_request* request)
     free(request);
 }
 
-char * hw_get_header(http_request *request, char *key)
+char* hw_get_header(http_request* request, char* key)
 {
-    return (char *)rxt_get(key, (rxt_node *)request->headers);
+    void* value = bftmap_get(request->headers, key, strlen(key));
+    return value;
 }
 
 int http_request_on_message_begin(http_parser* parser)
 {
     http_request_context *context = (http_request_context *)parser->data;
-    context->request = (http_request *)malloc(sizeof(http_request));
-    context->request->url = NULL;
-    context->request->headers = bftmap_create();
-    context->request->body = NULL;
-    context->request->current_header_key_length = 0;
-    context->request->current_header_value_length = 0;
-
+    context->request = create_http_request(context);
     return 0;
 }
 
@@ -67,17 +73,19 @@ int http_request_on_header_field(http_parser *parser, const char *at, size_t len
 {
     http_request_context *context = (http_request_context *)parser->data;
 
-    if (last_was_value && context->request->current_header_key_length > 0)
+    if (last_was_value && context->current_header_key_length > 0)
     {
         // Save last read header key/value pair.
-        bftmap_put(context->request->headers, context->request->current_header_key, context->request->current_header_key_length, strdup(context->request->current_header_value));
+        bftmap_put(context->request->headers, context->current_header_key, context->current_header_key_length, strdup(context->current_header_value));
+        
+        //printf("1 %s\n", context->current_header_key);
         
         /* Start of a new header */
-        context->request->current_header_key_length = 0;  
+        context->current_header_key_length = 0;  
     }
-    memcpy((char *)&context->request->current_header_key[context->request->current_header_key_length], at, length);
-    context->request->current_header_key_length += length;
-    context->request->current_header_key[context->request->current_header_key_length] = '\0';
+    memcpy((char *)&context->current_header_key[context->current_header_key_length], at, length);
+    context->current_header_key_length += length;
+    context->current_header_key[context->current_header_key_length] = '\0';
     last_was_value = 0;
     return 0;
 }
@@ -86,14 +94,14 @@ int http_request_on_header_value(http_parser *parser, const char *at, size_t len
 {
     http_request_context *context = (http_request_context *)parser->data;
     
-    if (!last_was_value && context->request->current_header_value_length > 0)
+    if (!last_was_value && context->current_header_value_length > 0)
     {
         /* Start of a new header */
-        context->request->current_header_value_length = 0;
+        context->current_header_value_length = 0;
     }
-    memcpy((char *)&context->request->current_header_value[context->request->current_header_value_length], at, length);
-    context->request->current_header_value_length += length;
-    context->request->current_header_value[context->request->current_header_value_length] = '\0';
+    memcpy((char *)&context->current_header_value[context->current_header_value_length], at, length);
+    context->current_header_value_length += length;
+    context->current_header_value[context->current_header_value_length] = '\0';
     last_was_value = 1;
     return 0;
 }
@@ -102,17 +110,18 @@ int http_request_on_headers_complete(http_parser* parser)
 {
     http_request_context *context = (http_request_context *)parser->data;
     
-    if (context->request->current_header_key_length > 0)
+    if (context->current_header_key_length > 0)
     {
-        if (context->request->current_header_value_length > 0)
+        if (context->current_header_value_length > 0)
         {
-            bftmap_put(context->request->headers, context->request->current_header_key, context->request->current_header_key_length, strdup(context->request->current_header_value));
+            /* Store last header */
+            bftmap_put(context->request->headers, context->current_header_key, context->current_header_key_length, strdup(context->current_header_value));
         }
-        context->request->current_header_key[context->request->current_header_key_length] = '\0';
-        context->request->current_header_value[context->request->current_header_value_length] = '\0';
+        context->current_header_key[context->current_header_key_length] = '\0';
+        context->current_header_value[context->current_header_value_length] = '\0';
     }
-    context->request->current_header_key_length = 0;
-    context->request->current_header_value_length = 0;
+    context->current_header_key_length = 0;
+    context->current_header_value_length = 0;
     return 0;
 }
 

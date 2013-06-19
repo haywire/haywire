@@ -15,7 +15,7 @@ static const char response[] =
 
 char *get_root(http_request *request)
 {
-    char* value = hw_get_header(request, "host");
+    char* value = hw_get_header(request, "user-agent");
     /* printf("HEADER: %s\n", value); */
     return (char *)response;
 }

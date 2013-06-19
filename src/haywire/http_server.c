@@ -92,15 +92,12 @@ void http_stream_on_connect(uv_stream_t* stream, int status)
 {
     int r;
 
-    //http_request_context *context = (http_request_context *)malloc(sizeof(http_request_context));
     http_request_context* context = create_http_context();
-
     uv_tcp_init(uv_loop, &context->stream);
     http_parser_init(&context->parser, HTTP_REQUEST);
 
     context->parser.data = context;
     context->stream.data = context;
-    //context->request = NULL;
 
     r = uv_accept(stream, (uv_stream_t*)&context->stream);
     r = uv_read_start((uv_stream_t*)&context->stream, http_stream_on_alloc, http_stream_on_read);

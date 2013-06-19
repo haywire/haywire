@@ -31,8 +31,8 @@ void set_header(http_request* request, char* name, char* value)
     int ret;
     khiter_t k;
     khash_t(headers) *h = request->headers;
-	k = kh_put(headers, h, name, &ret);
-	kh_value(h, k) = value;
+    k = kh_put(headers, h, name, &ret);
+    kh_value(h, k) = value;
 }
 
 void* get_header(http_request* request, char* name)

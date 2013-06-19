@@ -16,7 +16,7 @@ static const char response[] =
 char *get_root(http_request *request)
 {
     char* value = hw_get_header(request, "host");
-    //printf("HEADER: %s\n", value);
+    /* printf("HEADER: %s\n", value); */
     return (char *)response;
 }
 

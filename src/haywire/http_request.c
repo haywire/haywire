@@ -70,14 +70,13 @@ http_request* create_http_request(http_request_context* context)
 
 void free_http_request(http_request* request)
 {
-    free(request->url);
-    free(request->body);
-    khash_t(headers) *h = request->headers;
-    
+    khash_t(headers) *h = request->headers;    
     char* k;
     char* v;
     kh_foreach(h, k, v, { free(k); free(v); });
     kh_destroy(headers, request->headers);
+    free(request->url);
+    free(request->body);    
     free(request);
 }
 

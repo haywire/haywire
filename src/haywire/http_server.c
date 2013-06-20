@@ -17,6 +17,7 @@
 #include "http_request.h"
 #include "http_parser.h"
 #include "http_request_context.h"
+#include "server_stats.h"
 #include "trie/radix.h"
 #include "trie/route_compare_method.h"
 
@@ -38,16 +39,20 @@ http_request_context* create_http_context()
 {
     http_request_context* context = (http_request_context *)malloc(sizeof(http_request_context));
     context->request = NULL;
+    INCREMENT_STAT(stat_connections_created_total);
     return context;
 }
 
 void free_http_context(http_request_context* context)
 {
+    /*
     if (context->request != NULL)
     {
         free_http_request(context->request);
     }
+    */
     free(context);
+    INCREMENT_STAT(stat_connections_destroyed_total);
 }
 
 void hw_http_add_route(char *route, http_request_callback callback)
@@ -63,6 +68,11 @@ void hw_http_add_route(char *route, http_request_callback callback)
 int hw_http_open(char *ipaddress, int port)
 {
     int r;
+
+#ifdef DEBUG
+    char route[] = "/stats";
+    hw_http_add_route(route, get_server_stats);
+#endif /* DEBUG */
 
     parser_settings.on_header_field = http_request_on_header_field;
     parser_settings.on_header_value = http_request_on_header_value;
@@ -114,7 +124,7 @@ uv_buf_t http_stream_on_alloc(uv_handle_t* client, size_t suggested_size)
 void http_stream_on_close(uv_handle_t* handle)
 {
     http_request_context* context = (http_request_context*)handle->data;
-    free(context);
+    free_http_context(context);
 }
 
 void http_stream_on_read(uv_stream_t* tcp, ssize_t nread, uv_buf_t buf)

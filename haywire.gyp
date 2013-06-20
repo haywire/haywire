@@ -48,6 +48,8 @@
           'src/haywire/http_request_context.h',
           'src/haywire/http_server.h',
           'src/haywire/http_server.c',
+          'src/haywire/server_stats.h',
+          'src/haywire/server_stats.c',
           'src/haywire/trie/radix.h',
           'src/haywire/trie/radix.c',
           'src/haywire/trie/route_compare_method.h',

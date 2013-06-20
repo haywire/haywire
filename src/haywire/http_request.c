@@ -6,6 +6,7 @@
 #include "http_parser.h"
 #include "http_server.h"
 #include "http_request_context.h"
+#include "server_stats.h"
 #include "trie/radix.h"
 #include "trie/route_compare_method.h"
 #include "trie/khash.h"
@@ -65,6 +66,7 @@ http_request* create_http_request(http_request_context* context)
     request->body = NULL;
     context->current_header_key_length = 0;
     context->current_header_value_length = 0;
+    INCREMENT_STAT(stat_requests_created_total);
     return request;
 }
 
@@ -78,6 +80,7 @@ void free_http_request(http_request* request)
     free(request->url);
     free(request->body);    
     free(request);
+    INCREMENT_STAT(stat_requests_destroyed_total);
 }
 
 char* hw_get_header(http_request* request, char* key)

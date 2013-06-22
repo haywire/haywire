@@ -13,4 +13,5 @@ typedef struct
     int current_header_key_length;
     char current_header_value[1024];
     int current_header_value_length;
+    int keep_alive;
 } http_request_context;

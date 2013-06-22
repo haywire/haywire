@@ -175,6 +175,10 @@ int http_server_write_response(http_parser *parser, char *response)
 
 void http_server_after_write(uv_write_t* req, int status)
 {
-    //uv_close((uv_handle_t*)req->handle, on_close);
+    http_request_context *context = (http_request_context *)req->data;
+    if (!context->keep_alive)
+    {
+        uv_close((uv_handle_t*)req->handle, http_stream_on_close);
+    }
     free(req);
 }

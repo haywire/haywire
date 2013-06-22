@@ -173,6 +173,12 @@ int http_request_on_headers_complete(http_parser* parser)
     }
     context->current_header_key_length = 0;
     context->current_header_value_length = 0;
+    
+    context->request->http_major = parser->http_major;
+    context->request->http_minor = parser->http_minor;
+    context->request->method = parser->method;
+    context->keep_alive = http_should_keep_alive(parser);
+    context->request->keep_alive = context->keep_alive;
     return 0;
 }
 

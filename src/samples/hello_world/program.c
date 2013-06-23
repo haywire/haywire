@@ -35,8 +35,12 @@ char *get_root(http_request *request)
 int main()
 {
     char route[] = "/";
+    configuration config;
+    config.http_listen_address = "0.0.0.0";
+    config.http_listen_port = 8000;
 
-    hw_init_from_config("hello_world.conf");
+    /* hw_init_from_config("hello_world.conf"); */
+    hw_init_with_config(&config);
     hw_http_add_route(route, get_root);
     hw_http_open();
 }

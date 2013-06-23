@@ -50,6 +50,10 @@
           'src/haywire/http_server.c',
           'src/haywire/server_stats.h',
           'src/haywire/server_stats.c',
+          'src/haywire/configuration/configuration.h',
+          'src/haywire/configuration/configuration.c',
+          'src/haywire/configuration/ini.h',
+          'src/haywire/configuration/ini.c',
           'src/haywire/trie/radix.h',
           'src/haywire/trie/radix.c',
           'src/haywire/trie/route_compare_method.h',
@@ -79,6 +83,15 @@
         'sources': [
           'src/samples/hello_world/program.c',
         ],
+
+        'copies': [
+        {
+          'destination': '<(PRODUCT_DIR)',
+          'files': [
+            'src/samples/hello_world/hello_world.conf',
+          ],
+        }],
+
       }, # hello_world sample
 
     ],

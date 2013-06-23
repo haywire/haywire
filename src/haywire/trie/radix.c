@@ -294,7 +294,7 @@ static rxt_node* get_internal_custom(char *key, rxt_node *root, rxt_compare_meth
             root = (rxt_node *)root->value;
         }
         
-        match = compare_method(key, root);
+        match = compare_method(key, root->key);
         if (match)
         {
             return root;

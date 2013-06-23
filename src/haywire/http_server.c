@@ -18,7 +18,9 @@
 #include "http_parser.h"
 #include "http_request_context.h"
 #include "server_stats.h"
+#include "configuration/configuration.h"
 #include "trie/radix.h"
+#include "trie/khash.h"
 #include "trie/route_compare_method.h"
 
 #define UVERR(err, msg) fprintf(stderr, "%s: %s\n", msg, uv_strerror(err))
@@ -29,11 +31,15 @@
     exit(1); \
   }
 
+KHASH_MAP_INIT_STR(string_hashmap, char*)
+
+static configuration* config;
 static uv_loop_t* uv_loop;
 static uv_tcp_t server;
 static http_parser_settings parser_settings;
 
-rxt_node *routes = NULL;
+//rxt_node *routes = NULL;
+void* routes;
 
 http_request_context* create_http_context()
 {
@@ -45,34 +51,61 @@ http_request_context* create_http_context()
 
 void free_http_context(http_request_context* context)
 {
-    /*
     if (context->request != NULL)
     {
         free_http_request(context->request);
     }
-    */
+    
     free(context);
     INCREMENT_STAT(stat_connections_destroyed_total);
+}
+
+void set_route(void* hashmap, char* name, http_request_callback callback)
+{
+    int ret;
+    khiter_t k;
+    khash_t(string_hashmap) *h = hashmap;
+    k = kh_put(string_hashmap, h, strdup(name), &ret);
+    kh_value(h, k) = callback;
 }
 
 void hw_http_add_route(char *route, http_request_callback callback)
 {
     if (routes == NULL)
     {
-        routes = rxt_init();
+        //routes = rxt_init();
+        routes = kh_init(string_hashmap);
     }
-    rxt_put(route, callback, routes);
+    //rxt_put(route, callback, routes);
+    set_route(routes, route, callback);
     printf("Added route %s\n", route); // TODO: Replace with logging instead.
 }
 
-int hw_http_open(char *ipaddress, int port)
+int hw_init_from_config(char* configuration_filename)
 {
-    int r;
+    configuration* config = load_configuration(configuration_filename);
+    if (config == NULL)
+    {
+        return 1;
+    }
+    return hw_init_with_config(config);
+}
 
+int hw_init_with_config(configuration* configuration)
+{
 #ifdef DEBUG
     char route[] = "/stats";
     hw_http_add_route(route, get_server_stats);
 #endif /* DEBUG */
+
+    config = configuration;
+    
+    return 0;
+}
+
+int hw_http_open()
+{
+    int r;
 
     parser_settings.on_header_field = http_request_on_header_field;
     parser_settings.on_header_value = http_request_on_header_value;
@@ -89,10 +122,10 @@ int hw_http_open(char *ipaddress, int port)
     uv_loop = uv_default_loop();
     r = uv_tcp_init(uv_loop, &server);
 
-    r = uv_tcp_bind(&server, uv_ip4_addr(ipaddress, port));
+    r = uv_tcp_bind(&server, uv_ip4_addr(config->http_listen_address, config->http_listen_port));
     uv_listen((uv_stream_t*)&server, 128, http_stream_on_connect);
 
-    printf("Listening on 0.0.0.0:8000\n");
+    printf("Listening on %s:%d\n", config->http_listen_address, config->http_listen_port);
 
     uv_run(uv_loop, UV_RUN_DEFAULT);
     return 0;

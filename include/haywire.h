@@ -1,4 +1,11 @@
 #pragma once
+
+typedef struct
+{
+    const char* http_listen_address;
+    int http_listen_port;
+} configuration;
+
 /* Request Methods */
 #define HW_HTTP_METHOD_MAP(XX)       \
 XX(0,  DELETE,      DELETE)       \
@@ -54,6 +61,8 @@ typedef struct
 typedef char* (*http_request_callback)(http_request *request);
 extern http_request_callback http_req_callback;
 
-int hw_http_open(char *ipaddress, int port);
+int hw_init_from_config(char* configuration_filename);
+int hw_init_with_config(configuration* config);
+int hw_http_open();
 void hw_http_add_route(char *route, http_request_callback callback);
 char * hw_get_header(http_request *request, char *key);

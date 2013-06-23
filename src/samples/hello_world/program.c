@@ -36,6 +36,7 @@ int main()
 {
     char route[] = "/";
 
+    hw_init_from_config("hello_world.conf");
     hw_http_add_route(route, get_root);
-    hw_http_open("0.0.0.0", 8000);
+    hw_http_open();
 }

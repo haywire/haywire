@@ -17,16 +17,15 @@ static const char stats_response[] =
   "Content-Type: text/html" CRLF
   "Content-Length: 16" CRLF
   CRLF
-  "stats printed" CRLF
-  ;
+  "stats printed" CRLF;
 
 char* get_server_stats(http_request* request)
 {
-    printf("connections_created_total: %d\nconnections_destroyed_total: %d\nrequests_created_total: %d\nrequests_destroyed_total: %d\n\n", 
+    printf("connections_created_total: %d\nconnections_destroyed_total: %d\nrequests_created_total: %d\nrequests_destroyed_total: %d\n\n",
         stat_connections_created_total,
         stat_connections_destroyed_total,
         stat_requests_created_total,
         stat_requests_destroyed_total);
-
+    
     return (char *)stats_response;
 }

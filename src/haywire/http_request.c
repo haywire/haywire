@@ -25,14 +25,14 @@ static const char response_404[] =
 
 int last_was_value;
 
-KHASH_MAP_INIT_STR(headers, char*)
+KHASH_MAP_INIT_STR(string_hashmap, char*)
 
 void print_headers(http_request* request)
 {
     char* k;
     char* v;
 
-    khash_t(headers) *h = request->headers;
+    khash_t(string_hashmap) *h = request->headers;
     kh_foreach(h, k, v, { printf("KEY: %s VALUE: %s\n", k, v); });
 }
 
@@ -40,15 +40,15 @@ void set_header(http_request* request, char* name, char* value)
 {
     int ret;
     khiter_t k;
-    khash_t(headers) *h = request->headers;
-    k = kh_put(headers, h, strdup(name), &ret);
+    khash_t(string_hashmap) *h = request->headers;
+    k = kh_put(string_hashmap, h, strdup(name), &ret);
     kh_value(h, k) = strdup(value);
 }
 
 void* get_header(http_request* request, char* name)
 {
-    khash_t(headers) *h = request->headers;
-    khiter_t k = kh_get(headers, h, name);
+    khash_t(string_hashmap) *h = request->headers;
+    khiter_t k = kh_get(string_hashmap, h, name);
     void* val = kh_value(h, k);
     int is_missing = (k == kh_end(h));
     if (is_missing)
@@ -62,7 +62,7 @@ http_request* create_http_request(http_request_context* context)
 {
     http_request* request = malloc(sizeof(http_request));
     request->url = NULL;
-    request->headers = kh_init(headers);
+    request->headers = kh_init(string_hashmap);
     request->body = NULL;
     context->current_header_key_length = 0;
     context->current_header_value_length = 0;
@@ -72,11 +72,11 @@ http_request* create_http_request(http_request_context* context)
 
 void free_http_request(http_request* request)
 {
-    khash_t(headers) *h = request->headers;    
+    khash_t(string_hashmap) *h = request->headers;    
     char* k;
     char* v;
     kh_foreach(h, k, v, { free(k); free(v); });
-    kh_destroy(headers, request->headers);
+    kh_destroy(string_hashmap, request->headers);
     free(request->url);
     free(request->body);    
     free(request);
@@ -187,11 +187,35 @@ int http_request_on_body(http_parser *parser, const char *at, size_t length)
     return 0;
 }
 
+http_request_callback get_route_callback(char* url)
+{
+    http_request_callback callback = NULL;
+    //callback = (http_request_callback)rxt_get_custom(url, routes, hw_route_compare_method);
+    
+    char* k;
+    char* v;
+     
+    khash_t(string_hashmap) *h = routes;
+     
+    kh_foreach(h, k, v,
+    {
+        //printf("KEY: %s VALUE: %s\n", k, v);
+        int found = hw_route_compare_method(url, k);
+        if (found)
+        {
+            callback = (http_request_callback)v;
+        }
+    });
+     
+    return callback;
+}
+
 int http_request_on_message_complete(http_parser* parser)
 {
     char *response;
     http_request_context *context = (http_request_context *)parser->data;
-    http_request_callback callback = (http_request_callback)rxt_get_custom(context->request->url, routes, hw_route_compare_method);
+    http_request_callback callback = get_route_callback(context->request->url);
+    
     if (callback != NULL)
     {
         response = callback(context->request);

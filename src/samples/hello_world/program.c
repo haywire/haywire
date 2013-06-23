@@ -24,7 +24,7 @@ static const char response_keep_alive[] =
 char *get_root(http_request *request)
 {
     char* value = hw_get_header(request, "user-agent");
-    //printf("HEADER: %s\n", value);
+    /* printf("HEADER: %s\n", value); */
     
     if (request->keep_alive)
         return (char *)response_keep_alive;

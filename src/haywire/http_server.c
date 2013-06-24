@@ -105,8 +105,6 @@ int hw_init_with_config(configuration* configuration)
 
 int hw_http_open()
 {
-    int r;
-
     parser_settings.on_header_field = http_request_on_header_field;
     parser_settings.on_header_value = http_request_on_header_value;
     parser_settings.on_headers_complete = http_request_on_headers_complete;
@@ -119,10 +117,10 @@ int hw_http_open()
     signal(SIGPIPE, SIG_IGN);
 #endif // PLATFORM_POSIX
   
+    /* TODO: Use the return values from uv_tcp_init() and uv_tcp_bind() */
     uv_loop = uv_default_loop();
-    r = uv_tcp_init(uv_loop, &server);
-
-    r = uv_tcp_bind(&server, uv_ip4_addr(config->http_listen_address, config->http_listen_port));
+    uv_tcp_init(uv_loop, &server);
+    uv_tcp_bind(&server, uv_ip4_addr(config->http_listen_address, config->http_listen_port));
     uv_listen((uv_stream_t*)&server, 128, http_stream_on_connect);
 
     printf("Listening on %s:%d\n", config->http_listen_address, config->http_listen_port);
@@ -133,8 +131,6 @@ int hw_http_open()
 
 void http_stream_on_connect(uv_stream_t* stream, int status)
 {
-    int r;
-
     http_request_context* context = create_http_context();
     uv_tcp_init(uv_loop, &context->stream);
     http_parser_init(&context->parser, HTTP_REQUEST);
@@ -142,8 +138,9 @@ void http_stream_on_connect(uv_stream_t* stream, int status)
     context->parser.data = context;
     context->stream.data = context;
 
-    r = uv_accept(stream, (uv_stream_t*)&context->stream);
-    r = uv_read_start((uv_stream_t*)&context->stream, http_stream_on_alloc, http_stream_on_read);
+    /* TODO: Use the return values from uv_accept() and uv_read_start() */
+    uv_accept(stream, (uv_stream_t*)&context->stream);
+    uv_read_start((uv_stream_t*)&context->stream, http_stream_on_alloc, http_stream_on_read);
 }
 
 uv_buf_t http_stream_on_alloc(uv_handle_t* client, size_t suggested_size)
@@ -191,8 +188,7 @@ void http_stream_on_read(uv_stream_t* tcp, ssize_t nread, uv_buf_t buf)
 
 int http_server_write_response(http_parser *parser, char *response) 
 {
-    int r;
-    http_request_context *context = (http_request_context *)parser->data;
+    http_request_context *context = (http_request_context *)parser->data;    
     uv_write_t* write_req = (uv_write_t *)malloc(sizeof(*write_req) + sizeof(uv_buf_t));
     uv_buf_t *resbuf = (uv_buf_t *)(write_req+1);
 
@@ -201,7 +197,8 @@ int http_server_write_response(http_parser *parser, char *response)
 
     write_req->data = parser->data;
 
-    r = uv_write(write_req, (uv_stream_t*)&context->stream, resbuf, 1, http_server_after_write);
+    /* TODO: Use the return values from uv_write() */
+    uv_write(write_req, (uv_stream_t*)&context->stream, resbuf, 1, http_server_after_write);
 
     return 0;
 }

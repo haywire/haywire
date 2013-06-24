@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include "haywire.h"
 #include "http_request.h"
 #include "http_parser.h"
@@ -29,8 +30,8 @@ KHASH_MAP_INIT_STR(string_hashmap, char*)
 
 void print_headers(http_request* request)
 {
-    char* k;
-    char* v;
+    const char* k;
+    const char* v;
 
     khash_t(string_hashmap) *h = request->headers;
     kh_foreach(h, k, v, { printf("KEY: %s VALUE: %s\n", k, v); });
@@ -73,9 +74,9 @@ http_request* create_http_request(http_request_context* context)
 void free_http_request(http_request* request)
 {
     khash_t(string_hashmap) *h = request->headers;    
-    char* k;
-    char* v;
-    kh_foreach(h, k, v, { free(k); free(v); });
+    const char* k;
+    const char* v;
+    kh_foreach(h, k, v, { free((char*)k); free((char*)v); });
     kh_destroy(string_hashmap, request->headers);
     free(request->url);
     free(request->body);    
@@ -116,8 +117,6 @@ int http_request_on_header_field(http_parser *parser, const char *at, size_t len
 
     if (last_was_value && context->current_header_key_length > 0)
     {
-        char *key;
-
         // Save last read header key/value pair.
         for (i = 0; context->current_header_key[i]; i++)
         {

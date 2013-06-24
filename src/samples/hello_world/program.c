@@ -43,4 +43,5 @@ int main()
     hw_init_with_config(&config);
     hw_http_add_route(route, get_root);
     hw_http_open();
+    return 0;
 }

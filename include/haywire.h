@@ -53,16 +53,18 @@ typedef struct
     unsigned short http_minor;
     unsigned char method;
     int keep_alive;
-	char *url;
-    void *headers;
-    char *body;
+	char* url;
+    void* headers;
+    char* body;
+    int body_length;
 } http_request;
 
-typedef char* (*http_request_callback)(http_request *request);
+typedef char* (*http_request_callback)(http_request* request);
 extern http_request_callback http_req_callback;
 
 int hw_init_from_config(char* configuration_filename);
 int hw_init_with_config(configuration* config);
 int hw_http_open();
-void hw_http_add_route(char *route, http_request_callback callback);
-char * hw_get_header(http_request *request, char *key);
+void hw_http_add_route(char* route, http_request_callback callback);
+char* hw_get_header(http_request* request, char* key);
+char* hw_get_body(http_request* request);

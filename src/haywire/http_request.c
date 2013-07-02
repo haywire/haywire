@@ -64,6 +64,7 @@ http_request* create_http_request(http_request_context* context)
     http_request* request = malloc(sizeof(http_request));
     request->url = NULL;
     request->headers = kh_init(string_hashmap);
+    request->body_length = 0;
     request->body = NULL;
     context->current_header_key_length = 0;
     context->current_header_value_length = 0;
@@ -79,7 +80,6 @@ void free_http_request(http_request* request)
     kh_foreach(h, k, v, { free((char*)k); free((char*)v); });
     kh_destroy(string_hashmap, request->headers);
     free(request->url);
-    free(request->body);    
     free(request);
     INCREMENT_STAT(stat_requests_destroyed_total);
 }
@@ -88,6 +88,14 @@ char* hw_get_header(http_request* request, char* key)
 {
     void* value = get_header(request, key);
     return value;
+}
+
+char* hw_get_body(http_request* request)
+{
+    char* body = malloc(request->body_length + 1);
+    memcpy(body, request->body, request->body_length);
+    body[request->body_length] = '\0';
+    return body;
 }
 
 int http_request_on_message_begin(http_parser* parser)
@@ -183,6 +191,12 @@ int http_request_on_headers_complete(http_parser* parser)
 
 int http_request_on_body(http_parser *parser, const char *at, size_t length)
 {
+    http_request_context *context = (http_request_context *)parser->data;
+    if (context->request->body == NULL)
+    {
+        context->request->body = at;
+    }
+    context->request->body_length += length;
     return 0;
 }
 

@@ -225,14 +225,18 @@ http_request_callback get_route_callback(char* url)
 
 int http_request_on_message_complete(http_parser* parser)
 {
-    char *response;
+    hw_http_response* response;
     http_request_context *context = (http_request_context *)parser->data;
     http_request_callback callback = get_route_callback(context->request->url);
     
     if (callback != NULL)
     {
         response = callback(context->request);
-        http_server_write_response(parser, response);
+        char* response_buffer = create_response_buffer(response);
+        http_server_write_response(parser, response_buffer);
+
+        free(response_buffer);
+        hw_free_http_response(response);
     }
     else
     {

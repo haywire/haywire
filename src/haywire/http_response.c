@@ -11,20 +11,22 @@ KHASH_MAP_INIT_STR(string_hashmap, char*)
 hw_http_response hw_create_http_response()
 {
     http_response* response = malloc(sizeof(http_response));
-    response->headers = kh_init(string_hashmap);
+    response->headers = malloc(sizeof(http_header) * 64);
     response->http_major = 1;
     response->http_minor = 1;
+    response->number_of_headers = 0;
     return response;
 }
 
 void hw_free_http_response(hw_http_response* response)
 {
     http_response* resp = (http_response*)response;
-    khash_t(string_hashmap) *h = resp->headers;
-    const char* k;
-    const char* v;
-    kh_foreach(h, k, v, { free((char*)k); free((char*)v); });
-    kh_destroy(string_hashmap, resp->headers);
+    for (int i=0; i< resp->number_of_headers; i++)
+    {
+        free(resp->headers[i].name);
+        free(resp->headers[i].value);
+    }
+    free(resp->headers);
     free(resp);
 }
 
@@ -44,11 +46,11 @@ void hw_set_response_status_code(hw_http_response* response, const char* status_
 void hw_set_response_header(hw_http_response* response, char* name, char* value)
 {
     http_response* resp = (http_response*)response;
-    int ret;
-    khiter_t key;
-    khash_t(string_hashmap) *hash = resp->headers;
-    key = kh_put(string_hashmap, hash, strdup(name), &ret);
-    kh_value(hash, key) = strdup(value);
+    http_header* header = &resp->headers[resp->number_of_headers];
+    header->name = strdup(name);
+    header->value = strdup(value);
+    resp->headers[resp->number_of_headers] = *header;
+    resp->number_of_headers++;
 }
 
 void hw_set_body(hw_http_response* response, char* body)
@@ -64,20 +66,26 @@ char* create_response_buffer(hw_http_response* response)
     char* header_name;
     char* header_value;
     khash_t(string_hashmap) *hash = resp->headers;
+    int len;
+    int crlf_len = strlen(CRLF);
+    int body_len = strlen(resp->body);
     
-    sprintf(buffer, "HTTP/%d.%d %s", resp->http_major, resp->http_minor, resp->status_code);
-    strcpy(buffer + strlen(buffer), CRLF);
+    len = sprintf(buffer, "HTTP/%d.%d %s", resp->http_major, resp->http_minor, resp->status_code);
+    strcpy(buffer + len, CRLF);
+    len += crlf_len;
     
-    /* Loop and add the headers */
-    kh_foreach(hash, header_name, header_value,
-               {
-                   sprintf(buffer + strlen(buffer), "%s: %s" CRLF, header_name, header_value);
-               });
+    for (int i=0; i< resp->number_of_headers; i++)
+    {
+        len += sprintf(buffer + len, "%s: %s" CRLF, resp->headers[i].name, resp->headers[i].value);
+    }
     
     /* Add the body */
-    sprintf(buffer + strlen(buffer), "Content-Length: %ld" CRLF CRLF, strlen(resp->body) + 3);
-    strcpy(buffer + strlen(buffer), resp->body);
-    strcpy(buffer + strlen(buffer), CRLF);
+    len += sprintf(buffer + len, "Content-Length: %d" CRLF CRLF, body_len + 3);
+    strcpy(buffer + len, resp->body);
+    len += body_len;
+    
+    strcpy(buffer + len, CRLF);
+    len += crlf_len;
     
     return buffer;
 }

@@ -59,33 +59,47 @@ void hw_set_body(hw_http_response* response, char* body)
     resp->body = body;
 }
 
+char* itoa(int val, int base)
+{	
+	static char buf[32] = {0};
+	int i = 30;
+	
+	for(; val && i ; --i, val /= base)
+    {
+        
+		buf[i] = "0123456789abcdef"[val % base];
+    }
+	return &buf[i+1];
+}
+
 char* create_response_buffer(hw_http_response* response)
 {
     http_response* resp = (http_response*)response;
     char* buffer = malloc(1024);
-    char* header_name;
-    char* header_value;
-    khash_t(string_hashmap) *hash = resp->headers;
-    int len;
-    int crlf_len = strlen(CRLF);
     int body_len = strlen(resp->body);
     
-    len = sprintf(buffer, "HTTP/%d.%d %s", resp->http_major, resp->http_minor, resp->status_code);
-    strcpy(buffer + len, CRLF);
-    len += crlf_len;
+    strcat(buffer, "HTTP/");
+    strcat(buffer, itoa(resp->http_major, 10));
+    strcat(buffer, ".");
+    strcat(buffer, itoa(resp->http_minor, 10));
+    strcat(buffer, " ");
+    strcat(buffer, resp->status_code);
+    strcat(buffer, CRLF);
     
     for (int i=0; i< resp->number_of_headers; i++)
     {
-        len += sprintf(buffer + len, "%s: %s" CRLF, resp->headers[i].name, resp->headers[i].value);
+        strcat(buffer, resp->headers[i].name);
+        strcat(buffer, ": ");
+        strcat(buffer, resp->headers[i].value);
+        strcat(buffer, CRLF);
     }
     
     /* Add the body */
-    len += sprintf(buffer + len, "Content-Length: %d" CRLF CRLF, body_len + 3);
-    strcpy(buffer + len, resp->body);
-    len += body_len;
-    
-    strcpy(buffer + len, CRLF);
-    len += crlf_len;
+    strcat(buffer, "Content-Length: ");
+    strcat(buffer, itoa(body_len + 3, 10));
+    strcat(buffer, CRLF CRLF);
+    strcat(buffer, resp->body);
+    strcat(buffer, CRLF);
     
     return buffer;
 }

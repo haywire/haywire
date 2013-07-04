@@ -3,24 +3,6 @@
 #include "haywire.h"
 
 #define CRLF "\r\n"
-static const char response[] =
-    "HTTP/1.0 200 OK" CRLF
-    "Server: Haywire/master" CRLF
-    "Date: Fri, 26 Aug 2011 00:31:53 GMT" CRLF
-    "Content-Type: text/html" CRLF
-    "Content-Length: 14" CRLF
-    CRLF
-    "hello world" CRLF;
-
-static const char response_keep_alive[] =
-    "HTTP/1.1 200 OK" CRLF
-    "Server: Haywire/master" CRLF
-    "Date: Fri, 26 Aug 2011 00:31:53 GMT" CRLF
-    "Connection: Keep-Alive" CRLF
-    "Content-Type: text/html" CRLF
-    "Content-Length: 14" CRLF
-    CRLF
-    "hello world" CRLF;
 
 hw_http_response* get_root(http_request *request)
 {

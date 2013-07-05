@@ -47,6 +47,8 @@
           'src/haywire/http_request.c',
           'src/haywire/http_response.h',
           'src/haywire/http_response.c',
+          'src/haywire/http_request_cache.h',
+          'src/haywire/http_request_cache.c',
           'src/haywire/http_request_context.h',
           'src/haywire/http_server.h',
           'src/haywire/http_server.c',

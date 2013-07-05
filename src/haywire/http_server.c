@@ -17,6 +17,7 @@
 #include "http_request.h"
 #include "http_parser.h"
 #include "http_request_context.h"
+#include "http_request_cache.h"
 #include "server_stats.h"
 #include "configuration/configuration.h"
 #include "trie/radix.h"
@@ -34,11 +35,10 @@
 KHASH_MAP_INIT_STR(string_hashmap, char*)
 
 static configuration* config;
-static uv_loop_t* uv_loop;
 static uv_tcp_t server;
 static http_parser_settings parser_settings;
 
-//rxt_node *routes = NULL;
+uv_loop_t* uv_loop;
 void* routes;
 
 http_request_context* create_http_context()
@@ -99,7 +99,6 @@ int hw_init_with_config(configuration* configuration)
 #endif /* DEBUG */
 
     config = configuration;
-    
     return 0;
 }
 
@@ -120,12 +119,16 @@ int hw_http_open()
     /* TODO: Use the return values from uv_tcp_init() and uv_tcp_bind() */
     uv_loop = uv_default_loop();
     uv_tcp_init(uv_loop, &server);
+
+    initialize_http_request_cache();
+
     uv_tcp_bind(&server, uv_ip4_addr(config->http_listen_address, config->http_listen_port));
     uv_listen((uv_stream_t*)&server, 128, http_stream_on_connect);
 
     printf("Listening on %s:%d\n", config->http_listen_address, config->http_listen_port);
 
     uv_run(uv_loop, UV_RUN_DEFAULT);
+
     return 0;
 }
 

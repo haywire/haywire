@@ -8,8 +8,8 @@ hw_http_response* get_root(http_request *request)
 {
     hw_http_response* response = hw_create_http_response();
     hw_set_response_status_code(response, HTTP_STATUS_200);
-    hw_set_response_header(response, "Server", "Haywire/master");
-    hw_set_response_header(response, "Date", "Fri, 31 Aug 2011 00:31:53 GMT");
+    //hw_set_response_header(response, "Server", "Haywire/master");
+    //hw_set_response_header(response, "Date", "Fri, 31 Aug 2011 00:31:53 GMT");
     hw_set_response_header(response, "Content-Type", "text/html");
     hw_set_body(response, "hello world");
     

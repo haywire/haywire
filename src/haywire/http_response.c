@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "http_response.h"
+#include "http_request_cache.h"
 #include "haywire.h"
 #include "trie/khash.h"
 
@@ -77,7 +78,9 @@ char* create_response_buffer(hw_http_response* response)
     http_response* resp = (http_response*)response;
     char* buffer = malloc(1024);
     int body_len = strlen(resp->body);
+    http_request_cache_entry* cached_entry = get_cached_request(HTTP_STATUS_200);
     
+    /*
     strcat(buffer, "HTTP/");
     strcat(buffer, itoa(resp->http_major, 10));
     strcat(buffer, ".");
@@ -85,6 +88,10 @@ char* create_response_buffer(hw_http_response* response)
     strcat(buffer, " ");
     strcat(buffer, resp->status_code);
     strcat(buffer, CRLF);
+    */
+    
+    memcpy(buffer, cached_entry->value, cached_entry->length);
+    //buffer[len] = '\0';
     
     for (int i=0; i< resp->number_of_headers; i++)
     {

@@ -11,7 +11,7 @@ hw_http_response* get_root(http_request *request)
     
     hw_string* status_code = malloc(sizeof(hw_string));
     status_code->value = HTTP_STATUS_200;
-    status_code->length = strlen(HTTP_STATUS_200);
+    status_code->length = 6;
     hw_set_response_status_code(response, status_code);
     
     hw_string* content_type_name = malloc(sizeof(hw_string));

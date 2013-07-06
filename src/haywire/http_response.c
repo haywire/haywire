@@ -23,14 +23,7 @@ hw_http_response hw_create_http_response()
 void hw_free_http_response(hw_http_response* response)
 {
     http_response* resp = (http_response*)response;
-    for (int i=0; i< resp->number_of_headers; i++)
-    {
-        free(resp->headers[i].name);
-        free(resp->headers[i].value);
-    }
     free(resp->headers);
-    free(resp->status_code);
-    free(resp->body);
     free(resp);
 }
 
@@ -41,13 +34,13 @@ void hw_set_http_version(hw_http_response* response, unsigned short major, unsig
     resp->http_minor = minor;
 }
 
-void hw_set_response_status_code(hw_http_response* response, hw_string* status_code)
+void hw_set_response_status_code(hw_http_response* response, hw_string status_code)
 {
     http_response* resp = (http_response*)response;
     resp->status_code = status_code;
 }
 
-void hw_set_response_header(hw_http_response* response, hw_string* name, hw_string* value)
+void hw_set_response_header(hw_http_response* response, hw_string name, hw_string value)
 {
     http_response* resp = (http_response*)response;
     http_header* header = &resp->headers[resp->number_of_headers];
@@ -57,7 +50,7 @@ void hw_set_response_header(hw_http_response* response, hw_string* name, hw_stri
     resp->number_of_headers++;
 }
 
-void hw_set_body(hw_http_response* response, hw_string* body)
+void hw_set_body(hw_http_response* response, hw_string body)
 {
     http_response* resp = (http_response*)response;
     resp->body = body;
@@ -114,9 +107,9 @@ char* create_response_buffer(hw_http_response* response)
         append_buffer = (char*)memcpy(append_buffer, CRLF, 2) + 2;
         */
         
-        append_buffer = memcpy_append(append_buffer, resp->headers[i].name->value, resp->headers[i].name->length);
+        append_buffer = memcpy_append(append_buffer, resp->headers[i].name.value, resp->headers[i].name.length);
         append_buffer = memcpy_append(append_buffer, ": ", 2);
-        append_buffer = memcpy_append(append_buffer, resp->headers[i].value->value, resp->headers[i].value->length);
+        append_buffer = memcpy_append(append_buffer, resp->headers[i].value.value, resp->headers[i].value.length);
         append_buffer = memcpy_append(append_buffer, CRLF, 2);
     }
     
@@ -131,11 +124,11 @@ char* create_response_buffer(hw_http_response* response)
     */
     
     append_buffer = memcpy_append(append_buffer, "Content-Length: ", 16);
-    char* content_length = itoa(resp->body->length + 3, 10);
+    char* content_length = itoa(resp->body.length + 3, 10);
     size_t content_length_size = strlen(content_length);
     append_buffer = memcpy_append(append_buffer, content_length, content_length_size);
     append_buffer = memcpy_append(append_buffer, CRLF CRLF, 4);
-    append_buffer = memcpy_append(append_buffer, resp->body->value, resp->body->length);
+    append_buffer = memcpy_append(append_buffer, resp->body.value, resp->body.length);
     append_buffer = memcpy_append(append_buffer, CRLF, 2);
     return buffer;
 }

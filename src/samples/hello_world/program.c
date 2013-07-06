@@ -30,7 +30,6 @@ hw_http_response* get_root(http_request *request)
     
     if (request->keep_alive)
     {
-        //hw_set_response_header(response, "Connection", "Keep-Alive");
         hw_string* keep_alive_name = malloc(sizeof(hw_string));
         keep_alive_name->value = "Connection";
         keep_alive_name->length = 10;

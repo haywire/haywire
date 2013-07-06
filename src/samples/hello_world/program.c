@@ -9,32 +9,32 @@ hw_http_response* get_root(http_request *request)
 {
     hw_http_response* response = hw_create_http_response();
     
-    hw_string status_code; // = malloc(sizeof(hw_string));
+    hw_string status_code;
     status_code.value = HTTP_STATUS_200;
     status_code.length = 6;
     hw_set_response_status_code(response, status_code);
     
-    hw_string content_type_name; // = malloc(sizeof(hw_string));
+    hw_string content_type_name;
     content_type_name.value = "Content-Type";
     content_type_name.length = 12;
 
-    hw_string content_type_value; // = malloc(sizeof(hw_string));
+    hw_string content_type_value;
     content_type_value.value = "text/html";
     content_type_value.length = 9;
     hw_set_response_header(response, content_type_name, content_type_value);
     
-    hw_string body; // = malloc(sizeof(hw_string));
+    hw_string body;
     body.value = "hello world";
     body.length = 11;
     hw_set_body(response, body);
     
     if (request->keep_alive)
     {
-        hw_string keep_alive_name; // = malloc(sizeof(hw_string));
+        hw_string keep_alive_name;
         keep_alive_name.value = "Connection";
         keep_alive_name.length = 10;
 
-        hw_string keep_alive_value; // = malloc(sizeof(hw_string));
+        hw_string keep_alive_value;
         keep_alive_value.value = "Keep-Alive";
         keep_alive_value.length = 10;
         

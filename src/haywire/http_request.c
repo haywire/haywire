@@ -4,6 +4,7 @@
 #include <ctype.h>
 #include "haywire.h"
 #include "http_request.h"
+#include "http_response.h"
 #include "http_parser.h"
 #include "http_server.h"
 #include "http_request_context.h"

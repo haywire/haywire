@@ -17,7 +17,7 @@
 #include "http_request.h"
 #include "http_parser.h"
 #include "http_request_context.h"
-#include "http_request_cache.h"
+#include "http_response_cache.h"
 #include "server_stats.h"
 #include "configuration/configuration.h"
 #include "trie/radix.h"

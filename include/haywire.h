@@ -1,4 +1,5 @@
 #pragma once
+#include <stdio.h>
 
 /* Informational 1xx */
 #define HTTP_STATUS_100 "100 Continue"
@@ -105,6 +106,12 @@ enum hw_http_method
 
 typedef struct
 {
+    char* value;
+    size_t length;
+} hw_string;
+
+typedef struct
+{
     const char* http_listen_address;
     int http_listen_port;
 } configuration;
@@ -137,6 +144,6 @@ char* hw_get_body(http_request* request);
 hw_http_response hw_create_http_response();
 void hw_free_http_response(hw_http_response* response);
 void hw_set_http_version(hw_http_response* response, unsigned short major, unsigned short minor);
-void hw_set_response_status_code(hw_http_response* response, const char*);
-void hw_set_response_header(hw_http_response* response, char* name, char* value);
-void hw_set_body(hw_http_response* response, char* body);
+void hw_set_response_status_code(hw_http_response* response, hw_string*);
+void hw_set_response_header(hw_http_response* response, hw_string* name, hw_string* value);
+void hw_set_body(hw_http_response* response, hw_string* body);

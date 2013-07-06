@@ -41,14 +41,16 @@
 
         'sources': [
           'include/haywire.h',
+          'src/haywire/helpers.h',
+          'src/haywire/helpers.c',
           'src/haywire/http_parser.h',
           'src/haywire/http_parser.c',
           'src/haywire/http_request.h',
           'src/haywire/http_request.c',
           'src/haywire/http_response.h',
           'src/haywire/http_response.c',
-          'src/haywire/http_request_cache.h',
-          'src/haywire/http_request_cache.c',
+          'src/haywire/http_response_cache.h',
+          'src/haywire/http_response_cache.c',
           'src/haywire/http_request_context.h',
           'src/haywire/http_server.h',
           'src/haywire/http_server.c',

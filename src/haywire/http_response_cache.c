@@ -3,17 +3,17 @@
 #include <string.h>
 #include "uv.h"
 #include "haywire.h"
-#include "http_request_cache.h"
+#include "http_response_cache.h"
 #include "http_server.h"
 #include "trie/khash.h"
 
 #define CRLF "\r\n"
-KHASH_MAP_INIT_STR(string_hashmap, http_request_cache_entry*)
+KHASH_MAP_INIT_STR(string_hashmap, hw_string*)
 
 static khash_t(string_hashmap)* http_request_cache;
 static uv_timer_t cache_invalidation_timer;
 
-http_request_cache_entry* get_cached_request(char* http_status)
+hw_string* get_cached_request(char* http_status)
 {
     khiter_t key = kh_get(string_hashmap, http_request_cache, http_status);
     void* val = kh_value(http_request_cache, key);
@@ -25,7 +25,7 @@ http_request_cache_entry* get_cached_request(char* http_status)
     return val;
 }
 
-void set_cached_request(char* http_status, http_request_cache_entry* cache_entry)
+void set_cached_request(char* http_status, hw_string* cache_entry)
 {
     int ret;
     khiter_t key;
@@ -36,7 +36,7 @@ void set_cached_request(char* http_status, http_request_cache_entry* cache_entry
 void free_http_request_cache()
 {
     const char* k;
-    const http_request_cache_entry* v;
+    const hw_string* v;
     kh_foreach(http_request_cache, k, v,
     {
         free((char*)k);
@@ -50,7 +50,7 @@ void free_http_request_cache()
 void create_cached_http_request(char* http_status)
 {
     char* buffer = malloc(1024);
-    strcat(buffer, "HTTP/1.1 ");
+    strcpy(buffer, "HTTP/1.1 ");
     strcat(buffer, http_status);
     strcat(buffer, CRLF);
     strcat(buffer, "Server: Haywire/master");
@@ -59,10 +59,10 @@ void create_cached_http_request(char* http_status)
     strcat(buffer, CRLF);
     
     int length = strlen(buffer);
-    buffer[length] = '\0';
-    length++;
+    //buffer[length] = '\0';
+    //length++;
     
-    http_request_cache_entry* cache_entry = malloc(sizeof(http_request_cache_entry));
+    hw_string* cache_entry = malloc(sizeof(hw_string));
     cache_entry->value = buffer;
     cache_entry->length = length;
     set_cached_request(http_status, cache_entry);

@@ -5,8 +5,8 @@
 #include <stdio.h>
 #include <assert.h>
 
-char* itoa(int val, int base);
-static bool test_itoa(int val, int base, const char *expected);
+char* itoa(unsigned int val, unsigned int base);
+static bool test_itoa(unsigned int val, unsigned int base, const char *expected);
 
 #define INT_NIBBLES(h, g, f, e, d, c, b, a) (h##g##f##e##d##c##b##a)
 #define STR_NIBBLES(h, g, f, e, d, c, b, a) #h #g #f #e #d #c #b #a
@@ -20,11 +20,11 @@ int main(int argc, char *argv[]) {
 	return status;
 }
 
-static bool test_itoa(int val, int base, const char *expected) {
+static bool test_itoa(unsigned int val, unsigned int base, const char *expected) {
 	const char *itoa_output = itoa(val, base);
 
 	if (strcmp(itoa_output, expected) != 0) {
-		fprintf(stderr, "itoa(%d, %d) failed: expected \"%s\"; got \"%s\"\n", val, base, expected, itoa_output);
+		fprintf(stderr, "itoa(%u, %d) failed: expected \"%s\"; got \"%s\"\n", val, base, expected, itoa_output);
 		return false;
 	}
 

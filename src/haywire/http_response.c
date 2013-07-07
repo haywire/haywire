@@ -59,12 +59,17 @@ void hw_set_body(hw_http_response* response, char* body)
     resp->body = body;
 }
 
-char* itoa(int val, int base)
+char* itoa(unsigned int val, unsigned int base)
 {	
-	static char buf[32] = {0};
-	int i = 30;
+	enum {
+		buf_size = 33,
+		terminator_idx = buf_size - 1,
+		last_character_index = terminator_idx - 1
+	};
+	static char buf[buf_size] = {0};
+	int i = last_character_index;
 	
-	for(; val && i ; --i, val /= base)
+	for(; val && (i >= 0) ; --i, val /= base)
     {
         
 		buf[i] = "0123456789abcdef"[val % base];

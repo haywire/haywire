@@ -13,7 +13,6 @@ KHASH_MAP_INIT_STR(string_hashmap, char*)
 hw_http_response hw_create_http_response()
 {
     http_response* response = malloc(sizeof(http_response));
-    response->headers = malloc(sizeof(http_header) * 64);
     response->http_major = 1;
     response->http_minor = 1;
     response->number_of_headers = 0;
@@ -23,7 +22,6 @@ hw_http_response hw_create_http_response()
 void hw_free_http_response(hw_http_response* response)
 {
     http_response* resp = (http_response*)response;
-    free(resp->headers);
     free(resp);
 }
 
@@ -34,26 +32,26 @@ void hw_set_http_version(hw_http_response* response, unsigned short major, unsig
     resp->http_minor = minor;
 }
 
-void hw_set_response_status_code(hw_http_response* response, hw_string status_code)
+void hw_set_response_status_code(hw_http_response* response, hw_string* status_code)
 {
     http_response* resp = (http_response*)response;
-    resp->status_code = status_code;
+    resp->status_code = *status_code;
 }
 
-void hw_set_response_header(hw_http_response* response, hw_string name, hw_string value)
+void hw_set_response_header(hw_http_response* response, hw_string* name, hw_string* value)
 {
     http_response* resp = (http_response*)response;
     http_header* header = &resp->headers[resp->number_of_headers];
-    header->name = name;
-    header->value = value;
+    header->name = *name;
+    header->value = *value;
     resp->headers[resp->number_of_headers] = *header;
     resp->number_of_headers++;
 }
 
-void hw_set_body(hw_http_response* response, hw_string body)
+void hw_set_body(hw_http_response* response, hw_string* body)
 {
     http_response* resp = (http_response*)response;
-    resp->body = body;
+    resp->body = *body;
 }
 
 char* itoa(int val, int base)

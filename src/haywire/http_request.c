@@ -75,7 +75,7 @@ http_request* create_http_request(http_request_context* context)
 
 void free_http_request(http_request* request)
 {
-    khash_t(string_hashmap) *h = request->headers;    
+    khash_t(string_hashmap) *h = request->headers;
     const char* k;
     const char* v;
     kh_foreach(h, k, v, { free((char*)k); free((char*)v); });
@@ -206,8 +206,8 @@ http_request_callback get_route_callback(char* url)
     http_request_callback callback = NULL;
     //callback = (http_request_callback)rxt_get_custom(url, routes, hw_route_compare_method);
     
-    char* k;
-    char* v;
+    const char* k;
+    const char* v;
      
     khash_t(string_hashmap) *h = routes;
      
@@ -233,16 +233,19 @@ int http_request_on_message_complete(http_parser* parser)
     if (callback != NULL)
     {
         response = callback(context->request);
-        char* response_buffer = create_response_buffer(response);
+        hw_string* response_buffer = create_response_buffer(response);
         http_server_write_response(parser, response_buffer);
-
+        free(response_buffer->value);
         free(response_buffer);
         hw_free_http_response(response);
     }
     else
     {
         // 404 Not Found.
-        http_server_write_response(parser, (char *)response_404);
+        hw_string* response404 = malloc(sizeof(hw_string));
+        response404->length = 0;
+        APPENDSTRING(response404, response_404);
+        http_server_write_response(parser, response404);
     }
 
     free_http_request(context->request);

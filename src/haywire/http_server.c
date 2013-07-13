@@ -73,10 +73,10 @@ void hw_http_add_route(char *route, http_request_callback callback)
 {
     if (routes == NULL)
     {
-        //routes = rxt_init();
+        /* routes = rxt_init(); */
         routes = kh_init(string_hashmap);
     }
-    //rxt_put(route, callback, routes);
+    /* rxt_put(route, callback, routes); */
     set_route(routes, route, callback);
     printf("Added route %s\n", route); // TODO: Replace with logging instead.
 }
@@ -100,6 +100,16 @@ int hw_init_with_config(configuration* configuration)
 
     config = configuration;
     return 0;
+}
+
+void free_http_server()
+{
+    /* TODO: Shut down accepting incoming requests */
+    khash_t(string_hashmap) *h = routes;
+    const char* k;
+    const char* v;
+    kh_foreach(h, k, v, { free((char*)k); free((char*)v); });
+    kh_destroy(string_hashmap, routes);
 }
 
 int hw_http_open()
@@ -170,7 +180,7 @@ void http_stream_on_read(uv_stream_t* tcp, ssize_t nread, uv_buf_t buf)
         parsed = http_parser_execute(&context->parser, &parser_settings, buf.base, nread);
         if (parsed < nread) 
         {
-            //uv_close((uv_handle_t*) &client->handle, http_stream_on_close);
+            /* uv_close((uv_handle_t*) &client->handle, http_stream_on_close); */
         }
     } 
     else 
@@ -178,7 +188,7 @@ void http_stream_on_read(uv_stream_t* tcp, ssize_t nread, uv_buf_t buf)
         uv_err_t err = uv_last_error(uv_loop);
         if (err.code != UV_EOF) 
         {
-            //UVERR(err, "read");
+            /* UVERR(err, "read"); */
             if (context->request != NULL)
             {
                 free_http_request(context->request);
@@ -189,20 +199,19 @@ void http_stream_on_read(uv_stream_t* tcp, ssize_t nread, uv_buf_t buf)
     free(buf.base);
 }
 
-int http_server_write_response(http_parser *parser, char *response) 
+int http_server_write_response(http_parser *parser, hw_string* response)
 {
     http_request_context *context = (http_request_context *)parser->data;    
     uv_write_t* write_req = (uv_write_t *)malloc(sizeof(*write_req) + sizeof(uv_buf_t));
     uv_buf_t *resbuf = (uv_buf_t *)(write_req+1);
 
-    resbuf->base = response;
-    resbuf->len = strlen(response) + 1;
+    resbuf->base = response->value;
+    resbuf->len = response->length + 1;
 
     write_req->data = parser->data;
 
     /* TODO: Use the return values from uv_write() */
     uv_write(write_req, (uv_stream_t*)&context->stream, resbuf, 1, http_server_after_write);
-
     return 0;
 }
 

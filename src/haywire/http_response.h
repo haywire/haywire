@@ -16,3 +16,5 @@ typedef struct
     int number_of_headers;
     hw_string body;
 } http_response;
+
+hw_string* create_response_buffer(hw_http_response* response);

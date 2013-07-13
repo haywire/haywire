@@ -59,8 +59,6 @@ void create_cached_http_request(char* http_status)
     strcat(buffer, CRLF);
     
     int length = strlen(buffer);
-    //buffer[length] = '\0';
-    //length++;
     
     hw_string* cache_entry = malloc(sizeof(hw_string));
     cache_entry->value = buffer;

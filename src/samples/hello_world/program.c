@@ -14,8 +14,7 @@ hw_http_response* get_root(http_request *request)
     hw_set_response_status_code(response, &status_code);
     
     hw_string content_type_name;
-    content_type_name.value = "Content-Type";
-    content_type_name.length = 12;
+    SETSTRING(content_type_name, "Content-Type");
 
     hw_string content_type_value;
     SETSTRING(content_type_value, "text/html");

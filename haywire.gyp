@@ -41,8 +41,6 @@
 
         'sources': [
           'include/haywire.h',
-          'src/haywire/helpers.h',
-          'src/haywire/helpers.c',
           'src/haywire/http_parser.h',
           'src/haywire/http_parser.c',
           'src/haywire/http_request.h',
@@ -54,6 +52,8 @@
           'src/haywire/http_request_context.h',
           'src/haywire/http_server.h',
           'src/haywire/http_server.c',
+          'src/haywire/hw_string.h',
+          'src/haywire/hw_string.c',
           'src/haywire/server_stats.h',
           'src/haywire/server_stats.c',
           'src/haywire/configuration/configuration.h',

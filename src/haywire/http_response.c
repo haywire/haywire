@@ -71,7 +71,7 @@ hw_string* create_response_buffer(hw_http_response* response)
 {
     http_response* resp = (http_response*)response;
     hw_string* response_string = malloc(sizeof(hw_string));
-    response_string->value = malloc(1024);
+    response_string->value = calloc(1024, 1);
     response_string->length = 0;
     
     hw_string* cached_entry = get_cached_request(HTTP_STATUS_200);

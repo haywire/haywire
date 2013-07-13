@@ -49,7 +49,7 @@ void free_http_request_cache()
 
 void create_cached_http_request(char* http_status)
 {
-    char* buffer = malloc(1024);
+    char* buffer = calloc(1024, 1);
     strcpy(buffer, "HTTP/1.1 ");
     strcat(buffer, http_status);
     strcat(buffer, CRLF);

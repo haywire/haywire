@@ -19,13 +19,44 @@ static const char stats_response[] =
   CRLF
   "stats printed" CRLF;
 
-char* get_server_stats(http_request* request)
+hw_http_response* get_server_stats(http_request* request)
 {
+    hw_http_response* response = hw_create_http_response();
+    hw_string status_code;
+    hw_string content_type_name;
+    hw_string content_type_value;
+    hw_string body;
+    hw_string keep_alive_name;
+    hw_string keep_alive_value;
+    
+    SETSTRING(status_code, HTTP_STATUS_200);
+    hw_set_response_status_code(response, &status_code);
+    
+    SETSTRING(content_type_name, "Content-Type");
+    
+    SETSTRING(content_type_value, "text/html");
+    hw_set_response_header(response, &content_type_name, &content_type_value);
+    
+    SETSTRING(body, "stats printed");
+    hw_set_body(response, &body);
+    
+    if (request->keep_alive)
+    {
+        SETSTRING(keep_alive_name, "Connection");
+        
+        SETSTRING(keep_alive_value, "Keep-Alive");
+        hw_set_response_header(response, &keep_alive_name, &keep_alive_value);
+    }
+    else
+    {
+        hw_set_http_version(response, 1, 0);
+    }
+    
     printf("connections_created_total: %d\nconnections_destroyed_total: %d\nrequests_created_total: %d\nrequests_destroyed_total: %d\n\n",
         stat_connections_created_total,
         stat_connections_destroyed_total,
         stat_requests_created_total,
         stat_requests_destroyed_total);
     
-    return (char *)stats_response;
+    return response;
 }

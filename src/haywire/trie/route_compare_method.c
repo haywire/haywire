@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include "route_compare_method.h"
 #include "radix.h"
 
@@ -20,6 +21,7 @@ int hw_route_compare_method(char *url, char* route)
     char *request_token;
     char *request_token_ptr;
     char prefix;
+    int match = 0;
     
     strcpy(route_key, route);
     
@@ -38,7 +40,9 @@ int hw_route_compare_method(char *url, char* route)
         }
         else
         {
-            if (!strncasecmp(route_token, request_token, 0))
+            /* TODO: Remove strlen() call here and maybe replace with hw_string */
+            match = strncasecmp(route_token, request_token, strlen(route_token));
+            if (!match)
             {
                 equal = 1;
                 //break;
@@ -57,7 +61,9 @@ int hw_route_compare_method(char *url, char* route)
     
     if (!equal)
     {
-        if (!strncasecmp(route_key, url, 0))
+        /* TODO: Remove strlen() call here and maybe replace with hw_string */
+        match = strncasecmp(route_key, url, strlen(route_key));
+        if (!match)
         {
             equal = 1;
         }

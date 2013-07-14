@@ -224,6 +224,42 @@ http_request_callback get_route_callback(char* url)
     return callback;
 }
 
+hw_http_response* get_404_response(http_request* request)
+{
+    hw_http_response* response = hw_create_http_response();
+    hw_string status_code;
+    hw_string content_type_name;
+    hw_string content_type_value;
+    hw_string body;
+    hw_string keep_alive_name;
+    hw_string keep_alive_value;
+    
+    SETSTRING(status_code, HTTP_STATUS_404);
+    hw_set_response_status_code(response, &status_code);
+    
+    SETSTRING(content_type_name, "Content-Type");
+    
+    SETSTRING(content_type_value, "text/html");
+    hw_set_response_header(response, &content_type_name, &content_type_value);
+    
+    SETSTRING(body, "404 Not Found");
+    hw_set_body(response, &body);
+    
+    if (request->keep_alive)
+    {
+        SETSTRING(keep_alive_name, "Connection");
+        
+        SETSTRING(keep_alive_value, "Keep-Alive");
+        hw_set_response_header(response, &keep_alive_name, &keep_alive_value);
+    }
+    else
+    {
+        hw_set_http_version(response, 1, 0);
+    }
+    
+    return response;
+}
+
 int http_request_on_message_complete(http_parser* parser)
 {
     hw_http_response* response;
@@ -242,10 +278,11 @@ int http_request_on_message_complete(http_parser* parser)
     else
     {
         // 404 Not Found.
-        response_buffer = malloc(sizeof(hw_string));
-        response_buffer->length = 0;
-        APPENDSTRING(response_buffer, response_404);
+        response = get_404_response(context->request);
+        response_buffer = create_response_buffer(response);
         http_server_write_response(parser, response_buffer);
+        free(response_buffer);
+        hw_free_http_response(response);
     }
 
     free_http_request(context->request);

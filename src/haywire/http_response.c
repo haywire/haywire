@@ -71,13 +71,16 @@ hw_string* create_response_buffer(hw_http_response* response)
 {
     http_response* resp = (http_response*)response;
     hw_string* response_string = malloc(sizeof(hw_string));
+    hw_string* cached_entry = get_cached_request(HTTP_STATUS_200);
+    hw_string content_length;
+
+    int i = 0;
+
     response_string->value = calloc(1024, 1);
     response_string->length = 0;
-    
-    hw_string* cached_entry = get_cached_request(HTTP_STATUS_200);
     append_string(response_string, cached_entry);
     
-    for (int i=0; i< resp->number_of_headers; i++)
+    for (i=0; i< resp->number_of_headers; i++)
     {
         http_header header = resp->headers[i];
         append_string(response_string, &header.name);
@@ -89,7 +92,6 @@ hw_string* create_response_buffer(hw_http_response* response)
     /* Add the body */
     APPENDSTRING(response_string, "Content-Length: ");
     
-    hw_string content_length;
     content_length.value = itoa(resp->body.length + 3, 10);
     content_length.length = strlen(content_length.value);
     append_string(response_string, &content_length);

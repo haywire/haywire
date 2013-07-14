@@ -8,30 +8,29 @@
 hw_http_response* get_root(http_request *request)
 {
     hw_http_response* response = hw_create_http_response();
-    
     hw_string status_code;
+    hw_string content_type_name;
+    hw_string content_type_value;
+    hw_string body;
+    hw_string keep_alive_name;
+    hw_string keep_alive_value;
+
     SETSTRING(status_code, HTTP_STATUS_200);
     hw_set_response_status_code(response, &status_code);
     
-    hw_string content_type_name;
     SETSTRING(content_type_name, "Content-Type");
-
-    hw_string content_type_value;
+    
     SETSTRING(content_type_value, "text/html");
     hw_set_response_header(response, &content_type_name, &content_type_value);
     
-    hw_string body;
     SETSTRING(body, "hello world");
     hw_set_body(response, &body);
     
     if (request->keep_alive)
     {
-        hw_string keep_alive_name;
         SETSTRING(keep_alive_name, "Connection");
-
-        hw_string keep_alive_value;
-        SETSTRING(keep_alive_value, "Keep-Alive");
         
+        SETSTRING(keep_alive_value, "Keep-Alive");
         hw_set_response_header(response, &keep_alive_name, &keep_alive_value);
     }
     else

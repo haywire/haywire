@@ -218,12 +218,14 @@ int http_server_write_response(http_parser *parser, hw_string* response)
 void http_server_after_write(uv_write_t* req, int status)
 {
     http_request_context *context = (http_request_context *)req->data;
+    uv_buf_t *resbuf;
+
     if (!context->keep_alive)
     {
         uv_close((uv_handle_t*)req->handle, http_stream_on_close);
     }
     
-    uv_buf_t *resbuf = (uv_buf_t *)(req+1);
+    resbuf = (uv_buf_t *)(req+1);
     free(resbuf->base);
     free(req);
 }

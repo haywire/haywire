@@ -229,11 +229,12 @@ int http_request_on_message_complete(http_parser* parser)
     hw_http_response* response;
     http_request_context *context = (http_request_context *)parser->data;
     http_request_callback callback = get_route_callback(context->request->url);
-    
+    hw_string* response_buffer;
+
     if (callback != NULL)
     {
         response = callback(context->request);
-        hw_string* response_buffer = create_response_buffer(response);
+        response_buffer = create_response_buffer(response);
         http_server_write_response(parser, response_buffer);
         free(response_buffer);
         hw_free_http_response(response);
@@ -241,10 +242,10 @@ int http_request_on_message_complete(http_parser* parser)
     else
     {
         // 404 Not Found.
-        hw_string* response404 = malloc(sizeof(hw_string));
-        response404->length = 0;
-        APPENDSTRING(response404, response_404);
-        http_server_write_response(parser, response404);
+        response_buffer = malloc(sizeof(hw_string));
+        response_buffer->length = 0;
+        APPENDSTRING(response_buffer, response_404);
+        http_server_write_response(parser, response_buffer);
     }
 
     free_http_request(context->request);

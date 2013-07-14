@@ -222,5 +222,8 @@ void http_server_after_write(uv_write_t* req, int status)
     {
         uv_close((uv_handle_t*)req->handle, http_stream_on_close);
     }
+    
+    uv_buf_t *resbuf = (uv_buf_t *)(req+1);
+    free(resbuf->base);
     free(req);
 }

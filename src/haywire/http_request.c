@@ -235,7 +235,6 @@ int http_request_on_message_complete(http_parser* parser)
         response = callback(context->request);
         hw_string* response_buffer = create_response_buffer(response);
         http_server_write_response(parser, response_buffer);
-        free(response_buffer->value);
         free(response_buffer);
         hw_free_http_response(response);
     }

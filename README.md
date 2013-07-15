@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/kellabyte/haywire.png)](https://travis-ci.org/kellabyte/haywire)
+[![Build Status](https://travis-ci.org/kellabyte/Haywire.png?branch=master)](https://travis-ci.org/kellabyte/Haywire)
 
 Haywire
 =======

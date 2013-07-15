@@ -94,6 +94,7 @@
           ['OS=="win"', {
             'defines': [
               'PLATFORM_WINDOWS',
+              'BUILDING_HAYWIRE_SHARED',
             ],
           }, { # OS != "win",
             'defines': [

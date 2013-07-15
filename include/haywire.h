@@ -1,12 +1,23 @@
 #pragma once
 #include <stdio.h>
 
-#define BUILDING_HAYWIRE_SHARED
-#if defined(BUILDING_HAYWIRE_SHARED)
-    /* Building shared library. */
-    #define HAYWIRE_EXTERN __declspec(dllexport)
+#ifdef _WIN32
+    /* Windows - set up dll import/export decorators. */
+    #ifdef BUILDING_HAYWIRE_SHARED
+        /* Building shared library. */
+        #define HAYWIRE_EXTERN __declspec(dllexport)
+    #else
+        #ifdef USING_HAYWIRE_SHARED
+            /* Using shared library. */
+            #define HAYWIRE_EXTERN __declspec(dllimport)
+        #else
+            /* Building static library. */
+            #define HAYWIRE_EXTERN /* nothing */
+        #endif
+    #endif
 #else
-    #define HAYWIRE_EXTERN
+    /* Building static library. */
+    #define HAYWIRE_EXTERN /* nothing */
 #endif
 
 /* Informational 1xx */

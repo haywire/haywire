@@ -1,6 +1,14 @@
 #pragma once
 #include <stdio.h>
 
+#define BUILDING_HAYWIRE_SHARED
+#if defined(BUILDING_HAYWIRE_SHARED)
+    /* Building shared library. */
+    #define HAYWIRE_EXTERN __declspec(dllexport)
+#else
+    #define HAYWIRE_EXTERN
+#endif
+
 /* Informational 1xx */
 #define HTTP_STATUS_100 "100 Continue"
 #define HTTP_STATUS_101 "101 Switching Protocols"
@@ -116,7 +124,7 @@ typedef struct
 
 typedef struct
 {
-    const char* http_listen_address;
+    char* http_listen_address;
     int http_listen_port;
 } configuration;
 
@@ -135,19 +143,19 @@ typedef struct
 typedef	void* hw_http_response;
 typedef char hw_http_method;
 
-typedef hw_http_response* (*http_request_callback)(http_request* request);
+typedef hw_http_response* (__stdcall *http_request_callback)(http_request* request);
 extern http_request_callback http_req_callback;
 
-int hw_init_from_config(char* configuration_filename);
-int hw_init_with_config(configuration* config);
-int hw_http_open();
-void hw_http_add_route(char* route, http_request_callback callback);
-char* hw_get_header(http_request* request, char* key);
-char* hw_get_body(http_request* request);
+HAYWIRE_EXTERN int hw_init_from_config(char* configuration_filename);
+HAYWIRE_EXTERN int hw_init_with_config(configuration* config);
+HAYWIRE_EXTERN int hw_http_open();
+HAYWIRE_EXTERN void hw_http_add_route(char* route, http_request_callback callback);
+HAYWIRE_EXTERN char* hw_get_header(http_request* request, char* key);
+HAYWIRE_EXTERN char* hw_get_body(http_request* request);
 
-hw_http_response hw_create_http_response();
-void hw_free_http_response(hw_http_response* response);
-void hw_set_http_version(hw_http_response* response, unsigned short major, unsigned short minor);
-void hw_set_response_status_code(hw_http_response* response, hw_string* status_code);
-void hw_set_response_header(hw_http_response* response, hw_string* name, hw_string* value);
-void hw_set_body(hw_http_response* response, hw_string* body);
+HAYWIRE_EXTERN hw_http_response hw_create_http_response();
+HAYWIRE_EXTERN void hw_free_http_response(hw_http_response* response);
+HAYWIRE_EXTERN void hw_set_http_version(hw_http_response* response, unsigned short major, unsigned short minor);
+HAYWIRE_EXTERN void hw_set_response_status_code(hw_http_response* response, hw_string* status_code);
+HAYWIRE_EXTERN void hw_set_response_header(hw_http_response* response, hw_string* name, hw_string* value);
+HAYWIRE_EXTERN void hw_set_body(hw_http_response* response, hw_string* body);

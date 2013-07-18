@@ -15,9 +15,12 @@
             #define HAYWIRE_EXTERN /* nothing */
         #endif
     #endif
+
+    #define HAYWIRE_CALLING_CONVENTION __cdecl
 #else
     /* Building static library. */
     #define HAYWIRE_EXTERN /* nothing */
+    #define HAYWIRE_CALLING_CONVENTION /* nothing */
 #endif
 
 /* Informational 1xx */
@@ -154,7 +157,7 @@ typedef struct
 typedef	void* hw_http_response;
 typedef char hw_http_method;
 
-typedef hw_http_response* (__cdecl *http_request_callback)(http_request* request);
+typedef hw_http_response* (HAYWIRE_CALLING_CONVENTION *http_request_callback)(http_request* request);
 extern http_request_callback http_req_callback;
 
 HAYWIRE_EXTERN int hw_init_from_config(char* configuration_filename);

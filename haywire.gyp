@@ -73,8 +73,8 @@
       # haywire shared library
       ########################################
       {
-        'target_name': 'libhaywire',
-        'product_name': 'libhaywire',
+        'target_name': 'haywire_shared',
+        'product_name': 'haywire',
         'type': 'shared_library',
         'msvs_guid': '5ECEC9E5-8F23-47B6-93E0-C3B328B3BE65',
         

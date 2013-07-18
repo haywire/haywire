@@ -15,7 +15,7 @@
     'configurations': {
       'debug': {
         'defines': [ 'DEBUG', '_DEBUG' ],
-        'cflags': [ '-g', '-O0', '-fwrapv' ],
+        'cflags': [ '-g', '-O0', '-fwrapv', '-fPIC' ],
         'msvs_settings': {
           'VCCLCompilerTool': {
             'target_conditions': [
@@ -55,6 +55,7 @@
           '-fomit-frame-pointer',
           '-fdata-sections',
           '-ffunction-sections',
+          '-fPIC',
         ],
         'msvs_settings': {
           'VCCLCompilerTool': {

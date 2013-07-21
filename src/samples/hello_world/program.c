@@ -5,9 +5,8 @@
 
 #define CRLF "\r\n"
 
-hw_http_response* get_root(http_request *request)
+void get_root(http_request *request, hw_http_response* response)
 {
-    hw_http_response* response = hw_create_http_response();
     hw_string status_code;
     hw_string content_type_name;
     hw_string content_type_value;
@@ -37,7 +36,6 @@ hw_http_response* get_root(http_request *request)
     {
         hw_set_http_version(response, 1, 0);
     }
-    return response;
 }
 
 int main(int args, char** argsv)

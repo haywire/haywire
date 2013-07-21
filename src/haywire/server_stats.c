@@ -19,9 +19,8 @@ static const char stats_response[] =
   CRLF
   "stats printed" CRLF;
 
-hw_http_response* get_server_stats(http_request* request)
+void get_server_stats(http_request* request, hw_http_response* response)
 {
-    hw_http_response* response = hw_create_http_response();
     hw_string status_code;
     hw_string content_type_name;
     hw_string content_type_value;
@@ -57,6 +56,4 @@ hw_http_response* get_server_stats(http_request* request)
         stat_connections_destroyed_total,
         stat_requests_created_total,
         stat_requests_destroyed_total);
-    
-    return response;
 }

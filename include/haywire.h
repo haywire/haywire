@@ -157,7 +157,7 @@ typedef struct
 typedef	void* hw_http_response;
 typedef char hw_http_method;
 
-typedef hw_http_response* (HAYWIRE_CALLING_CONVENTION *http_request_callback)(http_request* request);
+typedef void (HAYWIRE_CALLING_CONVENTION *http_request_callback)(http_request* request, hw_http_response* response);
 extern http_request_callback http_req_callback;
 
 HAYWIRE_EXTERN int hw_init_from_config(char* configuration_filename);

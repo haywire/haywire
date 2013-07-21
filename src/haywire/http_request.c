@@ -267,7 +267,8 @@ int http_request_on_message_complete(http_parser* parser)
 
     if (callback != NULL)
     {
-        response = callback(connection->request);
+        response = hw_create_http_response();
+        callback(connection->request, response);
         response_buffer = create_response_buffer(response);
         http_server_write_response(parser, response_buffer);
         free(response_buffer);

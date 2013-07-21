@@ -1,6 +1,6 @@
 #include "configuration.h"
 #include "ini.h"
-#include "../trie/khash.h"
+#include "../khash.h"
 
 KHASH_MAP_INIT_STR(route_hashes, char*)
 

@@ -2,9 +2,7 @@
 #include "uv.h"
 #include "haywire.h"
 #include "http_parser.h"
-#include "trie/radix.h"
 
-//extern rxt_node *routes;
 extern void* routes;
 extern uv_loop_t* uv_loop;
 

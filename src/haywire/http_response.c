@@ -4,7 +4,7 @@
 #include "http_response.h"
 #include "http_response_cache.h"
 #include "haywire.h"
-#include "trie/khash.h"
+#include "khash.h"
 #include "hw_string.h"
 
 #define CRLF "\r\n"

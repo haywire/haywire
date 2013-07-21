@@ -5,7 +5,7 @@
 #include "haywire.h"
 #include "http_response_cache.h"
 #include "http_server.h"
-#include "trie/khash.h"
+#include "khash.h"
 
 #define CRLF "\r\n"
 KHASH_MAP_INIT_STR(string_hashmap, hw_string*)

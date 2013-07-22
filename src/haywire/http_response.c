@@ -10,9 +10,10 @@
 #define CRLF "\r\n"
 KHASH_MAP_INIT_STR(string_hashmap, char*)
 
-hw_http_response hw_create_http_response()
+hw_http_response hw_create_http_response(http_connection* connection)
 {
     http_response* response = malloc(sizeof(http_response));
+    response->connection = connection;
     response->http_major = 1;
     response->http_minor = 1;
     response->number_of_headers = 0;

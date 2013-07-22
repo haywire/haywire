@@ -51,6 +51,8 @@ void get_server_stats(http_request* request, hw_http_response* response)
         hw_set_http_version(response, 1, 0);
     }
     
+    hw_http_response_send(response, NULL);
+    
     printf("connections_created_total: %d\nconnections_destroyed_total: %d\nrequests_created_total: %d\nrequests_destroyed_total: %d\n\n",
         stat_connections_created_total,
         stat_connections_destroyed_total,

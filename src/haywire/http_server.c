@@ -33,6 +33,8 @@
 
 KHASH_MAP_INIT_STR(string_hashmap, char*)
 
+static http_response_complete_callback http_resp_complete_callback = 0;
+
 static configuration* config;
 static uv_tcp_t server;
 static http_parser_settings parser_settings;
@@ -78,6 +80,11 @@ void hw_http_add_route(char *route, http_request_callback callback)
     /* rxt_put(route, callback, routes); */
     set_route(routes, route, callback);
     printf("Added route %s\n", route); // TODO: Replace with logging instead.
+}
+
+void hw_register_http_response_complete_callback(http_response_complete_callback callback)
+{
+    http_resp_complete_callback = callback;
 }
 
 int hw_init_from_config(char* configuration_filename)
@@ -203,33 +210,37 @@ void http_stream_on_read(uv_stream_t* tcp, ssize_t nread, uv_buf_t buf)
     free(buf.base);
 }
 
-int http_server_write_response(http_parser *parser, hw_string* response)
+int http_server_write_response(hw_write_context* write_context, hw_string* response)
 {
-    http_connection* connection = (http_connection*)parser->data;    
     uv_write_t* write_req = (uv_write_t *)malloc(sizeof(*write_req) + sizeof(uv_buf_t));
-    uv_buf_t *resbuf = (uv_buf_t *)(write_req+1);
+    uv_buf_t* resbuf = (uv_buf_t *)(write_req+1);
 
     resbuf->base = response->value;
     resbuf->len = response->length + 1;
 
-    write_req->data = parser->data;
+    write_req->data = write_context;
 
     /* TODO: Use the return values from uv_write() */
-    uv_write(write_req, (uv_stream_t*)&connection->stream, resbuf, 1, http_server_after_write);
+    uv_write(write_req, (uv_stream_t*)&write_context->connection->stream, resbuf, 1, http_server_after_write);
     return 0;
 }
 
 void http_server_after_write(uv_write_t* req, int status)
 {
-    http_connection* connection = (http_connection*)req->data;
-    uv_buf_t *resbuf;
+    hw_write_context* write_context = (hw_write_context*)req->data;
+    uv_buf_t *resbuf = (uv_buf_t *)(req+1);
 
-    if (!connection->keep_alive)
+    if (!write_context->connection->keep_alive)
     {
         uv_close((uv_handle_t*)req->handle, http_stream_on_close);
     }
     
-    resbuf = (uv_buf_t *)(req+1);
+    if (http_resp_complete_callback != 0)
+    {
+        http_resp_complete_callback(write_context->user_data);
+    }
+    
+    free(write_context);
     free(resbuf->base);
     free(req);
 }

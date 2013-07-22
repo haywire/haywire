@@ -264,27 +264,41 @@ int http_request_on_message_complete(http_parser* parser)
     http_connection* connection = (http_connection*)parser->data;
     http_request_callback callback = get_route_callback(connection->request->url);
     hw_string* response_buffer;
-
+    hw_write_context* write_context;
+    
     if (callback != NULL)
     {
-        response = hw_create_http_response();
+        response = hw_create_http_response(connection);
         callback(connection->request, response);
-        response_buffer = create_response_buffer(response);
-        http_server_write_response(parser, response_buffer);
-        free(response_buffer);
-        hw_free_http_response(response);
     }
     else
     {
         // 404 Not Found.
+        write_context = malloc(sizeof(hw_write_context));
+        write_context->connection = connection;
         response = get_404_response(connection->request);
         response_buffer = create_response_buffer(response);
-        http_server_write_response(parser, response_buffer);
+        http_server_write_response(write_context, response_buffer);
         free(response_buffer);
         hw_free_http_response(response);
     }
-
+    
     free_http_request(connection->request);
     connection->request = NULL;
     return 0;
+}
+
+void hw_http_response_send(hw_http_response* response, void* user_data)
+{
+    hw_write_context* write_context = malloc(sizeof(hw_write_context));
+    http_response* resp = (http_response*)response;
+    hw_string* response_buffer = create_response_buffer(response);
+    
+    write_context->connection = resp->connection;
+    write_context->user_data = user_data;
+    http_server_write_response(write_context, response_buffer);
+    resp->sent = 1;
+    
+    free(response_buffer);
+    hw_free_http_response(response);
 }

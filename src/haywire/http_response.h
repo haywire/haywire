@@ -20,4 +20,5 @@ typedef struct
     int sent;
 } http_response;
 
+hw_http_response hw_create_http_response(http_connection* connection);
 hw_string* create_response_buffer(hw_http_response* response);

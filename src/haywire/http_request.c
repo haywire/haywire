@@ -222,9 +222,8 @@ http_request_callback get_route_callback(char* url)
     return callback;
 }
 
-hw_http_response* get_404_response(http_request* request)
+void get_404_response(http_request* request, http_response* response)
 {
-    hw_http_response* response = hw_create_http_response();
     hw_string status_code;
     hw_string content_type_name;
     hw_string content_type_value;
@@ -260,15 +259,14 @@ hw_http_response* get_404_response(http_request* request)
 
 int http_request_on_message_complete(http_parser* parser)
 {
-    hw_http_response* response;
     http_connection* connection = (http_connection*)parser->data;
     http_request_callback callback = get_route_callback(connection->request->url);
     hw_string* response_buffer;
     hw_write_context* write_context;
+    hw_http_response* response = hw_create_http_response(connection);
     
     if (callback != NULL)
     {
-        response = hw_create_http_response(connection);
         callback(connection->request, response);
     }
     else
@@ -276,7 +274,7 @@ int http_request_on_message_complete(http_parser* parser)
         // 404 Not Found.
         write_context = malloc(sizeof(hw_write_context));
         write_context->connection = connection;
-        response = get_404_response(connection->request);
+        get_404_response(connection->request, (http_response*)response);
         response_buffer = create_response_buffer(response);
         http_server_write_response(write_context, response_buffer);
         free(response_buffer);
@@ -288,7 +286,7 @@ int http_request_on_message_complete(http_parser* parser)
     return 0;
 }
 
-void hw_http_response_send(hw_http_response* response, void* user_data)
+void hw_http_response_send(hw_http_response* response, void* user_data, http_response_complete_callback callback)
 {
     hw_write_context* write_context = malloc(sizeof(hw_write_context));
     http_response* resp = (http_response*)response;
@@ -296,6 +294,7 @@ void hw_http_response_send(hw_http_response* response, void* user_data)
     
     write_context->connection = resp->connection;
     write_context->user_data = user_data;
+    write_context->callback = callback;
     http_server_write_response(write_context, response_buffer);
     resp->sent = 1;
     

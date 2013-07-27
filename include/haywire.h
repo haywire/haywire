@@ -164,14 +164,12 @@ HAYWIRE_EXTERN int hw_init_from_config(char* configuration_filename);
 HAYWIRE_EXTERN int hw_init_with_config(configuration* config);
 HAYWIRE_EXTERN int hw_http_open();
 HAYWIRE_EXTERN void hw_http_add_route(char* route, http_request_callback callback);
-HAYWIRE_EXTERN void hw_register_http_response_complete_callback(http_response_complete_callback callback);
 HAYWIRE_EXTERN char* hw_get_header(http_request* request, char* key);
 HAYWIRE_EXTERN char* hw_get_body(http_request* request);
 
-HAYWIRE_EXTERN hw_http_response hw_create_http_response();
 HAYWIRE_EXTERN void hw_free_http_response(hw_http_response* response);
 HAYWIRE_EXTERN void hw_set_http_version(hw_http_response* response, unsigned short major, unsigned short minor);
 HAYWIRE_EXTERN void hw_set_response_status_code(hw_http_response* response, hw_string* status_code);
 HAYWIRE_EXTERN void hw_set_response_header(hw_http_response* response, hw_string* name, hw_string* value);
 HAYWIRE_EXTERN void hw_set_body(hw_http_response* response, hw_string* body);
-HAYWIRE_EXTERN void hw_http_response_send(hw_http_response* response, void* user_data);
+HAYWIRE_EXTERN void hw_http_response_send(hw_http_response* response, void* user_data, http_response_complete_callback callback);

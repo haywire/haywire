@@ -8,6 +8,7 @@ typedef struct
 {
     http_connection* connection;
     void* user_data;
+    http_response_complete_callback callback;
 } hw_write_context;
 
 extern void* routes;

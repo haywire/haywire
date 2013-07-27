@@ -5,6 +5,10 @@
 
 #define CRLF "\r\n"
 
+void response_complete(void* user_data)
+{
+}
+
 void get_root(http_request* request, hw_http_response* response)
 {
     hw_string status_code;
@@ -37,11 +41,7 @@ void get_root(http_request* request, hw_http_response* response)
         hw_set_http_version(response, 1, 0);
     }
     
-    hw_http_response_send(response, "user_data");
-}
-
-void response_complete(void* user_data)
-{
+    hw_http_response_send(response, "user_data", response_complete);
 }
 
 int main(int args, char** argsv)
@@ -61,7 +61,6 @@ int main(int args, char** argsv)
     /* hw_init_from_config("hello_world.conf"); */
     hw_init_with_config(&config);
     hw_http_add_route(route, get_root);
-    hw_register_http_response_complete_callback(response_complete);
     hw_http_open();
     return 0;
 }

@@ -33,8 +33,6 @@
 
 KHASH_MAP_INIT_STR(string_hashmap, char*)
 
-static http_response_complete_callback http_resp_complete_callback = 0;
-
 static configuration* config;
 static uv_tcp_t server;
 static http_parser_settings parser_settings;
@@ -80,11 +78,6 @@ void hw_http_add_route(char *route, http_request_callback callback)
     /* rxt_put(route, callback, routes); */
     set_route(routes, route, callback);
     printf("Added route %s\n", route); // TODO: Replace with logging instead.
-}
-
-void hw_register_http_response_complete_callback(http_response_complete_callback callback)
-{
-    http_resp_complete_callback = callback;
 }
 
 int hw_init_from_config(char* configuration_filename)
@@ -235,9 +228,9 @@ void http_server_after_write(uv_write_t* req, int status)
         uv_close((uv_handle_t*)req->handle, http_stream_on_close);
     }
     
-    if (http_resp_complete_callback != 0)
+    if (write_context->callback != 0)
     {
-        http_resp_complete_callback(write_context->user_data);
+        write_context->callback(write_context->user_data);
     }
     
     free(write_context);

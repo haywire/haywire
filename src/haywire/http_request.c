@@ -253,8 +253,6 @@ void get_404_response(http_request* request, http_response* response)
     {
         hw_set_http_version(response, 1, 0);
     }
-    
-    return response;
 }
 
 int http_request_on_message_complete(http_parser* parser)

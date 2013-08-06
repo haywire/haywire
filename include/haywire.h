@@ -1,4 +1,9 @@
 #pragma once
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdio.h>
 
 #ifdef _WIN32
@@ -155,15 +160,14 @@ typedef struct
 } http_request;
 
 typedef	void* hw_http_response;
-typedef char hw_http_method;
 
-typedef void (HAYWIRE_CALLING_CONVENTION *http_request_callback)(http_request* request, hw_http_response* response);
+typedef void (HAYWIRE_CALLING_CONVENTION *http_request_callback)(http_request* request, hw_http_response* response, void* user_data);
 typedef void (HAYWIRE_CALLING_CONVENTION *http_response_complete_callback)(void* user_data);
 
 HAYWIRE_EXTERN int hw_init_from_config(char* configuration_filename);
 HAYWIRE_EXTERN int hw_init_with_config(configuration* config);
 HAYWIRE_EXTERN int hw_http_open();
-HAYWIRE_EXTERN void hw_http_add_route(char* route, http_request_callback callback);
+HAYWIRE_EXTERN void hw_http_add_route(char* route, http_request_callback callback, void* user_data);
 HAYWIRE_EXTERN char* hw_get_header(http_request* request, char* key);
 HAYWIRE_EXTERN char* hw_get_body(http_request* request);
 
@@ -173,3 +177,7 @@ HAYWIRE_EXTERN void hw_set_response_status_code(hw_http_response* response, hw_s
 HAYWIRE_EXTERN void hw_set_response_header(hw_http_response* response, hw_string* name, hw_string* value);
 HAYWIRE_EXTERN void hw_set_body(hw_http_response* response, hw_string* body);
 HAYWIRE_EXTERN void hw_http_response_send(hw_http_response* response, void* user_data, http_response_complete_callback callback);
+
+#ifdef __cplusplus
+}
+#endif

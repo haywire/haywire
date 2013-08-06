@@ -200,9 +200,9 @@ int http_request_on_body(http_parser *parser, const char *at, size_t length)
     return 0;
 }
 
-http_request_callback get_route_callback(char* url)
+hw_route_entry* get_route_callback(char* url)
 {
-    http_request_callback callback = NULL;
+    hw_route_entry* route_entry = NULL;
     
     const char* k;
     const char* v;
@@ -215,11 +215,11 @@ http_request_callback get_route_callback(char* url)
         int found = hw_route_compare_method(url, k);
         if (found)
         {
-            callback = (http_request_callback)v;
+            route_entry = (hw_route_entry*)v;
         }
     });
      
-    return callback;
+    return route_entry;
 }
 
 void get_404_response(http_request* request, http_response* response)
@@ -258,20 +258,21 @@ void get_404_response(http_request* request, http_response* response)
 int http_request_on_message_complete(http_parser* parser)
 {
     http_connection* connection = (http_connection*)parser->data;
-    http_request_callback callback = get_route_callback(connection->request->url);
+    hw_route_entry* route_entry = get_route_callback(connection->request->url);
     hw_string* response_buffer;
     hw_write_context* write_context;
     hw_http_response* response = hw_create_http_response(connection);
     
-    if (callback != NULL)
+    if (route_entry != NULL)
     {
-        callback(connection->request, response);
+        route_entry->callback(connection->request, response, route_entry->user_data);
     }
     else
     {
         // 404 Not Found.
         write_context = malloc(sizeof(hw_write_context));
         write_context->connection = connection;
+        write_context->callback = 0;
         get_404_response(connection->request, (http_response*)response);
         response_buffer = create_response_buffer(response);
         http_server_write_response(write_context, response_buffer);

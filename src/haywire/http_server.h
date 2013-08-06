@@ -6,6 +6,12 @@
 
 typedef struct
 {
+    http_request_callback callback;
+    void* user_data;
+} hw_route_entry;
+
+typedef struct
+{
     http_connection* connection;
     void* user_data;
     http_response_complete_callback callback;

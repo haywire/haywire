@@ -9,7 +9,7 @@ void response_complete(void* user_data)
 {
 }
 
-void get_root(http_request* request, hw_http_response* response)
+void get_root(http_request* request, hw_http_response* response, void* user_data)
 {
     hw_string status_code;
     hw_string content_type_name;
@@ -17,7 +17,7 @@ void get_root(http_request* request, hw_http_response* response)
     hw_string body;
     hw_string keep_alive_name;
     hw_string keep_alive_value;
-
+    
     SETSTRING(status_code, HTTP_STATUS_200);
     hw_set_response_status_code(response, &status_code);
     
@@ -60,7 +60,7 @@ int main(int args, char** argsv)
 
     /* hw_init_from_config("hello_world.conf"); */
     hw_init_with_config(&config);
-    hw_http_add_route(route, get_root);
+    hw_http_add_route(route, get_root, NULL);
     hw_http_open();
     return 0;
 }

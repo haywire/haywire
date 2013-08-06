@@ -59,24 +59,26 @@ void free_http_connection(http_connection* connection)
     INCREMENT_STAT(stat_connections_destroyed_total);
 }
 
-void set_route(void* hashmap, char* name, http_request_callback callback)
+void set_route(void* hashmap, char* name, hw_route_entry* route_entry)
 {
     int ret;
     khiter_t k;
     khash_t(string_hashmap) *h = hashmap;
     k = kh_put(string_hashmap, h, strdup(name), &ret);
-    kh_value(h, k) = callback;
+    kh_value(h, k) = route_entry;
 }
 
-void hw_http_add_route(char *route, http_request_callback callback)
+void hw_http_add_route(char *route, http_request_callback callback, void* user_data)
 {
+    hw_route_entry* route_entry = malloc(sizeof(hw_route_entry));
+    route_entry->callback = callback;
+    route_entry->user_data = user_data;
+    
     if (routes == NULL)
     {
-        /* routes = rxt_init(); */
         routes = kh_init(string_hashmap);
     }
-    /* rxt_put(route, callback, routes); */
-    set_route(routes, route, callback);
+    set_route(routes, route, route_entry);
     printf("Added route %s\n", route); // TODO: Replace with logging instead.
 }
 
@@ -95,7 +97,7 @@ int hw_init_with_config(configuration* configuration)
     int http_listen_address_length;
 #ifdef DEBUG
     char route[] = "/stats";    
-    hw_http_add_route(route, get_server_stats);
+    hw_http_add_route(route, get_server_stats, NULL);
 #endif /* DEBUG */
     /* Copy the configuration */
     http_listen_address_length = strlen(configuration->http_listen_address);

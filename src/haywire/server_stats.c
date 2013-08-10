@@ -19,7 +19,7 @@ static const char stats_response[] =
   CRLF
   "stats printed" CRLF;
 
-void get_server_stats(http_request* request, hw_http_response* response)
+void get_server_stats(http_request* request, hw_http_response* response, void* user_data)
 {
     hw_string status_code;
     hw_string content_type_name;

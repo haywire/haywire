@@ -17,7 +17,7 @@ void get_root(http_request* request, hw_http_response* response, void* user_data
     hw_string body;
     hw_string keep_alive_name;
     hw_string keep_alive_value;
-    
+        
     SETSTRING(status_code, HTTP_STATUS_200);
     hw_set_response_status_code(response, &status_code);
     

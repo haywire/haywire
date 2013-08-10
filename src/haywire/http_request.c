@@ -195,8 +195,11 @@ int http_request_on_body(http_parser *parser, const char *at, size_t length)
     if (connection->request->body == NULL)
     {
         connection->request->body = at;
+        connection->request->body = malloc(length);
+        memcpy(connection->request->body, at, length);
     }
     connection->request->body_length += length;
+    
     return 0;
 }
 
@@ -211,7 +214,6 @@ hw_route_entry* get_route_callback(char* url)
      
     kh_foreach(h, k, v,
     {
-        //printf("KEY: %s VALUE: %s\n", k, v);
         int found = hw_route_compare_method(url, k);
         if (found)
         {

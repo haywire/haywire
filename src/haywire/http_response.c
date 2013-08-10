@@ -16,6 +16,8 @@ hw_http_response hw_create_http_response(http_connection* connection)
     response->connection = connection;
     response->http_major = 1;
     response->http_minor = 1;
+    response->body.value = NULL;
+    response->body.length = 0;
     response->number_of_headers = 0;
     return response;
 }
@@ -98,7 +100,10 @@ hw_string* create_response_buffer(hw_http_response* response)
     append_string(response_string, &content_length);
     APPENDSTRING(response_string, CRLF CRLF);
     
-    append_string(response_string, &resp->body);
+    if (resp->body.length > 0)
+    {
+        append_string(response_string, &resp->body);
+    }
     APPENDSTRING(response_string, CRLF);
     return response_string;
 }

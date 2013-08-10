@@ -31,7 +31,7 @@
     exit(1); \
   }
 
-KHASH_MAP_INIT_STR(string_hashmap, char*)
+KHASH_MAP_INIT_STR(string_hashmap, hw_route_entry*)
 
 static configuration* config;
 static uv_tcp_t server;

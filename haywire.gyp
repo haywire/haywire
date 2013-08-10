@@ -138,8 +138,8 @@
       # hello_world sample
       ########################################
       {
-        'target_name': 'hello_world',
-        'product_name': 'hello_world',
+        'target_name': 'haywire_hello_world',
+        'product_name': 'haywire_hello_world',
         'type': 'executable',
         'msvs_guid': '5ECEC9E5-8F23-47B6-93E0-C3B328B3BE66',
 
@@ -159,7 +159,7 @@
         {
           'destination': '<(PRODUCT_DIR)',
           'files': [
-            'src/samples/hello_world/hello_world.conf',
+            'src/samples/hello_world/haywire_hello_world.conf',
           ],
         }],
 

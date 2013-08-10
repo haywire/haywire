@@ -1,6 +1,7 @@
 #include "configuration.h"
-#include "ini.h"
+#include "../hw_string.h"
 #include "../khash.h"
+#include "ini.h"
 
 KHASH_MAP_INIT_STR(route_hashes, char*)
 
@@ -11,7 +12,7 @@ int configuration_handler(void* user, const char* section, const char* name, con
 #define MATCH(s, n) strcmp(section, s) == 0 && strcmp(name, n) == 0
     if (MATCH("http", "listen_address"))
     {
-        config->http_listen_address = strdup(value);
+        config->http_listen_address = dupstr(value);
     }
     else if (MATCH("http", "listen_port"))
     {

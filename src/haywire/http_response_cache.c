@@ -3,9 +3,10 @@
 #include <string.h>
 #include "uv.h"
 #include "haywire.h"
+#include "hw_string.h"
+#include "khash.h"
 #include "http_response_cache.h"
 #include "http_server.h"
-#include "khash.h"
 
 #define CRLF "\r\n"
 KHASH_MAP_INIT_STR(string_hashmap, hw_string*)
@@ -29,7 +30,7 @@ void set_cached_request(char* http_status, hw_string* cache_entry)
 {
     int ret;
     khiter_t key;
-    key = kh_put(string_hashmap, http_request_cache, strdup(http_status), &ret);
+    key = kh_put(string_hashmap, http_request_cache, dupstr(http_status), &ret);
     kh_value(http_request_cache, key) = cache_entry;
 }
 

@@ -13,13 +13,14 @@
 #include <assert.h>
 #include "uv.h"
 #include "haywire.h"
+#include "hw_string.h"
+#include "khash.h"
 #include "http_server.h"
 #include "http_request.h"
 #include "http_parser.h"
 #include "http_connection.h"
 #include "http_response_cache.h"
 #include "server_stats.h"
-#include "khash.h"
 #include "route_compare_method.h"
 #include "configuration/configuration.h"
 
@@ -64,7 +65,7 @@ void set_route(void* hashmap, char* name, hw_route_entry* route_entry)
     int ret;
     khiter_t k;
     khash_t(string_hashmap) *h = hashmap;
-    k = kh_put(string_hashmap, h, strdup(name), &ret);
+    k = kh_put(string_hashmap, h, dupstr(name), &ret);
     kh_value(h, k) = route_entry;
 }
 
@@ -96,12 +97,12 @@ int hw_init_with_config(configuration* c)
 {    
     int http_listen_address_length;
 #ifdef DEBUG
-    char route[] = "/stats";    
+    char route[] = "/stats";
     hw_http_add_route(route, get_server_stats, NULL);
 #endif /* DEBUG */
     /* Copy the configuration */
     config = malloc(sizeof(configuration));
-    config->http_listen_address = strdup(c->http_listen_address);
+    config->http_listen_address = dupstr(c->http_listen_address);
     config->http_listen_port = c->http_listen_port;
     return 0;
 }

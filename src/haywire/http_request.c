@@ -3,6 +3,8 @@
 #include <string.h>
 #include <ctype.h>
 #include "haywire.h"
+#include "hw_string.h"
+#include "khash.h"
 #include "http_request.h"
 #include "http_response.h"
 #include "http_parser.h"
@@ -10,7 +12,6 @@
 #include "http_connection.h"
 #include "server_stats.h"
 #include "route_compare_method.h"
-#include "khash.h"
 
 #define CRLF "\r\n"
 static const char response_404[] =
@@ -42,8 +43,8 @@ void set_header(http_request* request, char* name, char* value)
     int ret;
     khiter_t k;
     khash_t(string_hashmap) *h = request->headers;
-    k = kh_put(string_hashmap, h, strdup(name), &ret);
-    kh_value(h, k) = strdup(value);
+    k = kh_put(string_hashmap, h, dupstr(name), &ret);
+    kh_value(h, k) = dupstr(value);
 }
 
 void* get_header(http_request* request, char* name)

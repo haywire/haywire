@@ -77,7 +77,11 @@ void free_http_request(http_request* request)
     khash_t(string_hashmap) *h = request->headers;
     const char* k;
     const char* v;
-    kh_foreach(h, k, v, { free((char*)k); free((char*)v); });
+    kh_foreach(h, k, v,
+    {
+        free((char*)k);
+        free((char*)v);
+    });
     kh_destroy(string_hashmap, request->headers);
     free(request->url);
     free(request);

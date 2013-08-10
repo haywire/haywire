@@ -92,7 +92,7 @@ int hw_init_from_config(char* configuration_filename)
     return hw_init_with_config(config);
 }
 
-int hw_init_with_config(configuration* configuration)
+int hw_init_with_config(configuration* c)
 {    
     int http_listen_address_length;
 #ifdef DEBUG
@@ -100,11 +100,9 @@ int hw_init_with_config(configuration* configuration)
     hw_http_add_route(route, get_server_stats, NULL);
 #endif /* DEBUG */
     /* Copy the configuration */
-    http_listen_address_length = strlen(configuration->http_listen_address);
     config = malloc(sizeof(configuration));
-    config->http_listen_address = malloc(http_listen_address_length + 1);
-    memcpy(config->http_listen_address, configuration->http_listen_address, http_listen_address_length + 1);
-    config->http_listen_port = configuration->http_listen_port;
+    config->http_listen_address = strdup(c->http_listen_address);
+    config->http_listen_port = c->http_listen_port;
     return 0;
 }
 

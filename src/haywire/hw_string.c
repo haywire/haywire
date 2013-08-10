@@ -10,6 +10,7 @@ void append_string(hw_string* destination, hw_string* source)
     destination->length += source->length;
 }
 
+/* Added because of http://stackoverflow.com/questions/8359966/strdup-returning-address-out-of-bounds */
 char* dupstr(const char *s)
 {
     char *const result = malloc(strlen(s) + 1);

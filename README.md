@@ -35,3 +35,6 @@ Haywire uses `gyp` which supports generating make type builds or Visual Studio a
 Open the Developer Command Prompt for Visual Studio
 
     build.bat
+    
+### Current benchmark measurements
+![Azure benchmarks](http://i.imgur.com/nfFXXpk.png)

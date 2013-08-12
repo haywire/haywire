@@ -38,7 +38,7 @@ Open the Developer Command Prompt for Visual Studio
     
 ### Current benchmark measurements
 #### Setup 1
-- 1 Azure Large VM (Ubuntu) 4 Haywire server instances of Haywire (1 per CPU core) load balanced by HAProxy
+- 1 Azure Large VM (Ubuntu) 4 Haywire instances of Haywire (1 per CPU core) load balanced by HAProxy
 - 1 Azure Large VM (Ubuntu) client running Wrk HTTP benchmarking tool.
 
 #### Results
@@ -49,7 +49,7 @@ Open the Developer Command Prompt for Visual Studio
 ![Setup 1 results](http://i.imgur.com/nfFXXpk.png)
 
 #### Setup 2
-- 1 Azure Large VM (Ubuntu) 1 Haywire server instance with 4 thread (1 per core) event loop fan out.
+- 1 Azure Large VM (Ubuntu) 1 Haywire instance with 4 thread (1 per core) event loop fan out.
 - 1 Azure Large VM (Ubuntu) client running Wrk HTTP benchmarking tool.
 
 #### Results

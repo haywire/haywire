@@ -16,6 +16,8 @@
 #include "hw_string.h"
 #include "khash.h"
 #include "http_server.h"
+#include "connection_consumer.h"
+#include "connection_dispatcher.h"
 #include "http_request.h"
 #include "http_parser.h"
 #include "http_connection.h"
@@ -117,7 +119,7 @@ void free_http_server()
     kh_destroy(string_hashmap, routes);
 }
 
-int hw_http_open()
+int hw_http_open(int threads)
 {
     parser_settings.on_header_field = http_request_on_header_field;
     parser_settings.on_header_value = http_request_on_header_value;
@@ -136,13 +138,16 @@ int hw_http_open()
     uv_tcp_init(uv_loop, &server);
 
     initialize_http_request_cache();
-
-    uv_tcp_bind(&server, uv_ip4_addr(config->http_listen_address, config->http_listen_port));
-    uv_listen((uv_stream_t*)&server, 128, http_stream_on_connect);
-
-    printf("Listening on %s:%d\n", config->http_listen_address, config->http_listen_port);
-
-    uv_run(uv_loop, UV_RUN_DEFAULT);
+    
+    struct server_ctx* servers;
+    servers = calloc(threads, sizeof(servers[0]));
+    for (int i = 0; i < threads; i++)
+    {
+        struct server_ctx* ctx = servers + i;
+        int rc = uv_sem_init(&ctx->semaphore, 0);
+        rc = uv_thread_create(&ctx->thread_id, connection_consumer_start, ctx);
+    }
+    start_connection_dispatching(UV_TCP, threads, servers, config->http_listen_address, config->http_listen_port);
 
     return 0;
 }

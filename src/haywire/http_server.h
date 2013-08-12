@@ -17,9 +17,16 @@ typedef struct
     http_response_complete_callback callback;
 } hw_write_context;
 
+union stream_handle
+{
+    uv_pipe_t pipe;
+    uv_tcp_t tcp;
+};
+
 extern void* routes;
 extern uv_loop_t* uv_loop;
 
+http_connection* create_http_connection();
 void http_stream_on_connect(uv_stream_t* stream, int status);
 uv_buf_t http_stream_on_alloc(uv_handle_t* client, size_t suggested_size);
 void http_stream_on_close(uv_handle_t* handle);

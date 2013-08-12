@@ -56,6 +56,8 @@ Open the Developer Command Prompt for Visual Studio
 - 574,462 requests/second.
 - Average 800 mbps (Azure network delivers 800 mbps so we are saturating capacity).
 - Average less than 60% CPU usage.
+ 
+###### Latency distribution
 
         wrk -d10 -t24 -c24 --pipeline 512 --latency http://server:8000
         Running 10s test @ http://server:8000

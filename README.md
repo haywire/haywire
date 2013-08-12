@@ -51,7 +51,7 @@ Open the Developer Command Prompt for Visual Studio
 #### Setup 2
 - 1 Azure Large VM (Ubuntu) 1 Haywire server instance with 4 thread (1 per core) event loop fan out.
 - 1 Azure Large VM (Ubuntu) client running Wrk HTTP benchmarking tool.
--
+
 #### Results
 - 574,462 requests/second.
 - Average 800 mbps (Azure network delivers 800 mbps so we are saturating capacity).

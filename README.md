@@ -35,3 +35,15 @@ Haywire uses `gyp` which supports generating make type builds or Visual Studio a
 Open the Developer Command Prompt for Visual Studio
 
     build.bat
+    
+### Current benchmark measurements
+#### Setup
+- 1 Azure Large VM (Ubuntu) Haywire server running 4 instances of Haywire (1 per CPU core) load balanced by HAProxy
+- 1 Azure Large VM (Ubuntu) client running Wrk HTTP benchmarking tool.
+
+#### Results
+- 601,077 requests/second
+- Average over 800Mbps (Azure network delivers 800Mbps so we are saturating capacity)
+- Average less than 40% CPU usage
+
+![Azure benchmarks](http://i.imgur.com/nfFXXpk.png)

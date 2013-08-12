@@ -57,19 +57,19 @@ Open the Developer Command Prompt for Visual Studio
 - Average 800 mbps (Azure network delivers 800 mbps so we are saturating capacity).
 - Average less than 60% CPU usage.
 
-    wrk -d10 -t24 -c24 --pipeline 512 --latency http://server:8000
-    Running 10s test @ http://server:8000
-      24 threads and 24 connections
-      Thread Stats   Avg      Stdev     Max   +/- Stdev
-        Latency    23.94ms   15.11ms 134.66ms   84.97%
-        Req/Sec    25.57k     9.61k   58.60k    65.55%
-      Latency Distribution
-         50%   19.34ms
-         75%   28.39ms
-         90%   41.16ms
-         99%   79.15ms
-      5743304 requests in 10.00s, 0.87GB read
-    Requests/sec: 574,462.58
-    Transfer/sec:     89.30MB
+        wrk -d10 -t24 -c24 --pipeline 512 --latency http://server:8000
+        Running 10s test @ http://server:8000
+          24 threads and 24 connections
+          Thread Stats   Avg      Stdev     Max   +/- Stdev
+            Latency    23.94ms   15.11ms 134.66ms   84.97%
+            Req/Sec    25.57k     9.61k   58.60k    65.55%
+          Latency Distribution
+             50%   19.34ms
+             75%   28.39ms
+             90%   41.16ms
+             99%   79.15ms
+          5743304 requests in 10.00s, 0.87GB read
+        Requests/sec: 574,462.58
+        Transfer/sec:     89.30MB
 
 ![Setup 2 results](http://i.imgur.com/nfaz2rB.png)

@@ -20,7 +20,7 @@
               'PLATFORM_LINUX',
             ],
             'cflags': [
-              '-std=c99',
+              '-std=gnu99',
             ],
           }],
           ['OS=="win"', {
@@ -90,7 +90,7 @@
               'PLATFORM_LINUX',
             ],
             'cflags': [
-              '-std=c99',
+              '-std=gnu99',
             ],
           }],
           ['OS=="win"', {

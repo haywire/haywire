@@ -57,19 +57,6 @@ void hw_set_body(hw_http_response* response, hw_string* body)
     resp->body = *body;
 }
 
-char* itoa(int val, int base)
-{	
-	static char buf[32] = {0};
-	int i = 30;
-	
-	for(; val && i ; --i, val /= base)
-    {
-        
-		buf[i] = "0123456789abcdef"[val % base];
-    }
-	return &buf[i+1];
-}
-
 hw_string* create_response_buffer(hw_http_response* response)
 {
     http_response* resp = (http_response*)response;
@@ -95,8 +82,7 @@ hw_string* create_response_buffer(hw_http_response* response)
     /* Add the body */
     APPENDSTRING(response_string, "Content-Length: ");
     
-    content_length.value = itoa(resp->body.length + 3, 10);
-    content_length.length = strlen(content_length.value);
+    string_from_int(&content_length, resp->body.length + 3, 10);
     append_string(response_string, &content_length);
     APPENDSTRING(response_string, CRLF CRLF);
     

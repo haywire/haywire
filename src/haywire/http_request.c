@@ -66,7 +66,9 @@ http_request* create_http_request(http_connection* connection)
     request->url = NULL;
     request->headers = kh_init(string_hashmap);
     request->body_length = 0;
-    request->body = NULL;
+    request->body = malloc(sizeof(hw_string));
+    request->body->value = NULL;
+    request->body->length = 0;
     connection->current_header_key_length = 0;
     connection->current_header_value_length = 0;
     INCREMENT_STAT(stat_requests_created_total);
@@ -85,6 +87,11 @@ void free_http_request(http_request* request)
     });
     kh_destroy(string_hashmap, request->headers);
     free(request->url);
+    if (request->body->length > 0)
+    {
+        free(request->body->value);
+    }
+    free(request->body);
     free(request);
     INCREMENT_STAT(stat_requests_destroyed_total);
 }
@@ -93,14 +100,6 @@ char* hw_get_header(http_request* request, char* key)
 {
     void* value = get_header(request, key);
     return value;
-}
-
-char* hw_get_body(http_request* request)
-{
-    char* body = malloc(request->body_length + 1);
-    memcpy(body, request->body, request->body_length);
-    body[request->body_length] = '\0';
-    return body;
 }
 
 int http_request_on_message_begin(http_parser* parser)
@@ -197,14 +196,12 @@ int http_request_on_headers_complete(http_parser* parser)
 int http_request_on_body(http_parser *parser, const char *at, size_t length)
 {
     http_connection* connection = (http_connection*)parser->data;
-    if (connection->request->body == NULL)
+    if (length != 0)
     {
-        connection->request->body = at;
-        connection->request->body = malloc(length);
-        memcpy(connection->request->body, at, length);
+        connection->request->body->value = realloc(connection->request->body->value, connection->request->body->length + length);
+        memcpy(connection->request->body->value + connection->request->body->length, at, length);
+        connection->request->body->length += length;
     }
-    connection->request->body_length += length;
-    
     return 0;
 }
 

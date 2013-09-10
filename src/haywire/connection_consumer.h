@@ -17,6 +17,7 @@ typedef unsigned char handle_storage_t[sizeof(union stream_handle2)];
 
 struct server_ctx
 {
+    int index;
     handle_storage_t server_handle;
     unsigned int num_connects;
     uv_async_t async_handle;

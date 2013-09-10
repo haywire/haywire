@@ -25,6 +25,13 @@ union stream_handle
 
 extern void* routes;
 extern uv_loop_t* uv_loop;
+extern hw_string* http_v1_0;
+extern hw_string* http_v1_1;
+extern hw_string* server_name;
+extern int listener_count;
+extern uv_async_t* listener_async_handles;
+extern uv_loop_t* listener_event_loops;
+extern uv_barrier_t* listeners_created_barrier;
 
 http_connection* create_http_connection();
 void http_stream_on_connect(uv_stream_t* stream, int status);

@@ -93,6 +93,10 @@ void connection_consumer_start(void *arg)
     
     ctx = arg;
     loop = uv_loop_new();
+    listener_event_loops[ctx->index] = *loop;
+    
+    http_request_cache_configure_listener(loop, &listener_async_handles[ctx->index]);
+    uv_barrier_wait(listeners_created_barrier);
     
     rc = uv_async_init(loop, &ctx->async_handle, connection_consumer_close);
     uv_unref((uv_handle_t*) &ctx->async_handle);

@@ -36,7 +36,7 @@ fi
 # Getting libuv
 if [ ! -d "lib/libuv" ]; then
     echo "git clone -b v0.10 https://github.com/joyent/libuv.git lib/libuv"
-    git clone -b v0.10 https://github.com/joyent/libuv.git lib/libuv
+    git clone https://github.com/joyent/libuv.git lib/libuv
 fi
 
 # Getting Gyp build environment.

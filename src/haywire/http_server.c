@@ -39,6 +39,7 @@ KHASH_MAP_INIT_STR(string_hashmap, hw_route_entry*)
 static configuration* config;
 static uv_tcp_t server;
 static http_parser_settings parser_settings;
+static struct sockaddr_in listen_address;
 
 uv_loop_t* uv_loop;
 void* routes;
@@ -163,7 +164,11 @@ int hw_http_open(int threads)
     {
         /* If running single threaded there is no need to use the IPC pipe
          to distribute requests between threads so lets avoid the IPC overhead */
-        uv_tcp_bind(&server, uv_ip4_addr(config->http_listen_address, config->http_listen_port));
+        
+        initialize_http_request_cache();
+        
+        uv_ip4_addr(config->http_listen_address, config->http_listen_port, &listen_address);
+        uv_tcp_bind(&server, (const struct sockaddr*)&listen_address);
         uv_listen((uv_stream_t*)&server, 128, http_stream_on_connect);
         printf("Listening on %s:%d\n", config->http_listen_address, config->http_listen_port);
         uv_run(uv_loop, UV_RUN_DEFAULT);
@@ -206,12 +211,10 @@ void http_stream_on_connect(uv_stream_t* stream, int status)
     uv_read_start((uv_stream_t*)&connection->stream, http_stream_on_alloc, http_stream_on_read);
 }
 
-uv_buf_t http_stream_on_alloc(uv_handle_t* client, size_t suggested_size)
+void http_stream_on_alloc(uv_handle_t* client, size_t suggested_size, uv_buf_t* buf)
 {
-    uv_buf_t buf;
-    buf.base = (char *)malloc(suggested_size);
-    buf.len = suggested_size;
-    return buf;
+    buf->base = malloc(suggested_size);
+    buf->len = suggested_size;
 }
 
 void http_stream_on_close(uv_handle_t* handle)
@@ -220,24 +223,34 @@ void http_stream_on_close(uv_handle_t* handle)
     free_http_connection(connection);
 }
 
-void http_stream_on_read(uv_stream_t* tcp, ssize_t nread, uv_buf_t buf)
+void http_stream_on_read(uv_stream_t* tcp, ssize_t nread, const uv_buf_t* buf)
 {
-    size_t parsed;
+    ssize_t parsed;
     http_connection* connection = (http_connection*)tcp->data;
-    
-    if (nread >= 0)
+
+    uv_shutdown_t* req;
+    if (nread < 0)
     {
-        parsed = http_parser_execute(&connection->parser, &parser_settings, buf.base, nread);
-        if (parsed < nread)
+        // Error or EOF
+        if (buf->base)
         {
-            /* uv_close((uv_handle_t*) &client->handle, http_stream_on_close); */
+            free(buf->base);
         }
-    }
-    else
-    {
+        
+        req = (uv_shutdown_t*) malloc(sizeof *req);
         uv_close((uv_handle_t*) &connection->stream, http_stream_on_close);
+        return;
     }
-    free(buf.base);
+    
+    if (nread == 0)
+    {
+        // Everything OK, but nothing read.
+        free(buf->base);
+        return;
+    }
+    
+    parsed = http_parser_execute(&connection->parser, &parser_settings, buf->base, nread);
+    
 }
 
 int http_server_write_response(hw_write_context* write_context, hw_string* response)

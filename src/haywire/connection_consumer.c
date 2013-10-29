@@ -4,8 +4,9 @@
 #include "connection_consumer.h"
 #include "http_server.h"
 #include "http_connection.h"
+#include "http_response_cache.h"
 
-void ipc_read2_cb(uv_pipe_t* ipc_pipe, ssize_t nread, uv_buf_t buf, uv_handle_type type)
+void ipc_read2_cb(uv_pipe_t* ipc_pipe, ssize_t nread, const uv_buf_t* buf, uv_handle_type type)
 {
     int rc;
     struct ipc_client_ctx* ctx;
@@ -23,11 +24,12 @@ void ipc_read2_cb(uv_pipe_t* ipc_pipe, ssize_t nread, uv_buf_t buf, uv_handle_ty
     uv_close((uv_handle_t*) &ctx->ipc_pipe, NULL);
 }
 
-uv_buf_t ipc_alloc_cb(uv_handle_t* handle, size_t suggested_size)
+void ipc_alloc_cb(uv_handle_t* handle, size_t suggested_size, uv_buf_t* buf)
 {
     struct ipc_client_ctx* ctx;
     ctx = container_of(handle, struct ipc_client_ctx, ipc_pipe);
-    return uv_buf_init(ctx->scratch, sizeof(ctx->scratch));
+    buf->base = ctx->scratch;
+    buf->len = sizeof(ctx->scratch);
 }
 
 void ipc_connect_cb(uv_connect_t* req, int status)
@@ -38,16 +40,11 @@ void ipc_connect_cb(uv_connect_t* req, int status)
     rc = uv_read2_start((uv_stream_t*)&ctx->ipc_pipe, ipc_alloc_cb, ipc_read2_cb);
 }
 
-void sv_read_cb(uv_stream_t* handle, ssize_t nread, uv_buf_t buf)
+void connection_consumer_alloc(uv_handle_t* handle, size_t suggested_size, uv_buf_t* buf)
 {
-    //ASSERT(nread == UV_EOF);
-    uv_close((uv_handle_t*) handle, (uv_close_cb)free);
-}
-
-uv_buf_t connection_consumer_alloc(uv_handle_t* handle, size_t suggested_size)
-{
-    static char buf[32];
-    return uv_buf_init(buf, sizeof(buf));
+    static char slab[32];
+    buf->base = slab;
+    buf->len = sizeof(slab);
 }
 
 void connection_consumer_new_connection(uv_stream_t* server_handle, int status)

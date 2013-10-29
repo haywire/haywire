@@ -35,8 +35,8 @@ extern uv_barrier_t* listeners_created_barrier;
 
 http_connection* create_http_connection();
 void http_stream_on_connect(uv_stream_t* stream, int status);
-uv_buf_t http_stream_on_alloc(uv_handle_t* client, size_t suggested_size);
+void http_stream_on_alloc(uv_handle_t* client, size_t suggested_size, uv_buf_t* buf);
 void http_stream_on_close(uv_handle_t* handle);
 int http_server_write_response(hw_write_context* write_context, hw_string* response);
 void http_server_after_write(uv_write_t* req, int status);
-void http_stream_on_read(uv_stream_t* tcp, ssize_t nread, uv_buf_t buf);
+void http_stream_on_read(uv_stream_t* tcp, ssize_t nread, const uv_buf_t* buf);

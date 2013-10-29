@@ -4,6 +4,8 @@
 #include "connection_dispatcher.h"
 #include "connection_consumer.h"
 
+static struct sockaddr_in listen_addr;
+
 void ipc_close_cb(uv_handle_t* handle)
 {
     struct ipc_peer_ctx* ctx;
@@ -65,9 +67,10 @@ void start_connection_dispatching(uv_handle_type type, unsigned int num_servers,
     
     if (type == UV_TCP)
     {
-        struct sockaddr_in listen_addr = uv_ip4_addr(listen_address, listen_port);
+        uv_ip4_addr(listen_address, listen_port, &listen_addr);
+        
         rc = uv_tcp_init(loop, (uv_tcp_t*) &ctx.server_handle);
-        rc = uv_tcp_bind((uv_tcp_t*) &ctx.server_handle, listen_addr);
+        rc = uv_tcp_bind((uv_tcp_t*) &ctx.server_handle, (const struct sockaddr*)&listen_addr);
         printf("Listening on %s:%d\n", listen_address, listen_port);
     }
     

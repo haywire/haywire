@@ -4,6 +4,10 @@
 #include "connection_dispatcher.h"
 #include "connection_consumer.h"
 
+#define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
+
+#define container_of(ptr, type, member) 	((type *)((char *)(ptr)- offsetof(type, member)))
+
 static struct sockaddr_in listen_addr;
 
 void ipc_close_cb(uv_handle_t* handle)

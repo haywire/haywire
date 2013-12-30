@@ -6,6 +6,12 @@
 #include "http_connection.h"
 #include "http_response_cache.h"
 
+
+
+#define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
+
+#define container_of(ptr, type, member) 	((type *)((char *)(ptr)- offsetof(type, member)))
+
 void ipc_read2_cb(uv_pipe_t* ipc_pipe, ssize_t nread, const uv_buf_t* buf, uv_handle_type type)
 {
     int rc;

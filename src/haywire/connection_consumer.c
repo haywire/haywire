@@ -12,13 +12,7 @@ void ipc_read2_cb(uv_pipe_t* ipc_pipe, ssize_t nread, const uv_buf_t* buf, uv_ha
     struct ipc_client_ctx* ctx;
     uv_loop_t* loop;
     
-	{
-		char * pChild = (char *)ipc_pipe;
-		char * pParent = pChild - offsetof(struct ipc_client_ctx, ipc_pipe);
-		ctx = (struct ipc_client_ctx *)pParent;
-	}
-
-//    ctx = container_of(ipc_pipe, struct ipc_client_ctx, ipc_pipe);
+    ctx = container_of(ipc_pipe, struct ipc_client_ctx, ipc_pipe);
     loop = ipc_pipe->loop;
     
     if (type == UV_TCP)

@@ -53,7 +53,7 @@ if [ $OS = $PLATFORM_WINDOWS ]; then
     echo "----------------------------------------"
     echo "Configuring for ${OS} & Visual Studio"
     echo "----------------------------------------"
-    $GYP --depth=. -Icommon.gypi -Dlibrary=static_library -Dtarget_arch=x64 --build=$CONFIGURATION haywire.gyp
+    $GYP --depth=. -Icommon.gypi -Duv_library=static_library -Dlibrary=static_library -Dtarget_arch=x64 --build=$CONFIGURATION haywire.gyp
     msbuild /p:Configuration=$CONFIGURATION haywire.sln
 else
     # Compiling wrk

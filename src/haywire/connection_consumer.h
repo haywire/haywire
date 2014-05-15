@@ -5,7 +5,7 @@
 #define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
 #endif
 
-#define container_of(ptr, type, member) (((char*)(ptr)) - offsetof(type, member))
+#define container_of(ptr, type, member) ((type*)(((char*)(ptr)) - offsetof(type, member)))
 
 
 union stream_handle2

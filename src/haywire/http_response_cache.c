@@ -106,6 +106,7 @@ hw_string* get_cached_request(char* http_status)
     int is_missing;
     void* val;
     khash_t(string_hashmap)* http_request_cache;
+    khiter_t key = 0;
     
     /* This thread hasn't created a response cache so create one */
     http_request_cache = uv_key_get(&thread_cache_key);
@@ -116,7 +117,7 @@ hw_string* get_cached_request(char* http_status)
         //printf("CREATED CACHE\n");
     }
     
-    khiter_t key = kh_get(string_hashmap, http_request_cache, http_status);
+    key = kh_get(string_hashmap, http_request_cache, http_status);
     if (key == 0)
     {
         is_missing = 1;

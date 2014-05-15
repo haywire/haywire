@@ -133,6 +133,8 @@ void free_http_server()
 
 int hw_http_open(int threads)
 {
+    uv_async_t* service_handle = 0;
+
     parser_settings.on_header_field = http_request_on_header_field;
     parser_settings.on_header_value = http_request_on_header_value;
     parser_settings.on_headers_complete = http_request_on_headers_complete;
@@ -157,7 +159,7 @@ int hw_http_open(int threads)
     listeners_created_barrier = malloc(sizeof(uv_barrier_t));
     uv_barrier_init(listeners_created_barrier, listener_count + 1);
     
-    uv_async_t* service_handle = malloc(sizeof(uv_async_t));
+    service_handle = malloc(sizeof(uv_async_t));
     uv_async_init(uv_loop, service_handle, NULL);
     
     if (listener_count == 0)
@@ -175,16 +177,19 @@ int hw_http_open(int threads)
     }
     else
     {
+        int i = 0;
+
         /* If we are running multi-threaded spin up the dispatcher that uses
          an IPC pipe to send socket connection requests to listening threads */
         struct server_ctx* servers;
         servers = calloc(threads, sizeof(servers[0]));
-        for (int i = 0; i < threads; i++)
+        for (i = 0; i < threads; i++)
         {
+            int rc = 0;
             struct server_ctx* ctx = servers + i;
             ctx->index = i;
             
-            int rc = uv_sem_init(&ctx->semaphore, 0);
+            rc = uv_sem_init(&ctx->semaphore, 0);
             rc = uv_thread_create(&ctx->thread_id, connection_consumer_start, ctx);
         }
         

@@ -70,7 +70,7 @@ void start_connection_dispatching(uv_handle_type type, unsigned int num_servers,
         uv_ip4_addr(listen_address, listen_port, &listen_addr);
         
         rc = uv_tcp_init(loop, (uv_tcp_t*) &ctx.server_handle);
-        rc = uv_tcp_bind((uv_tcp_t*) &ctx.server_handle, (const struct sockaddr*)&listen_addr);
+        rc = uv_tcp_bind((uv_tcp_t*) &ctx.server_handle, (const struct sockaddr*)&listen_addr, 0);
         printf("Listening on %s:%d\n", listen_address, listen_port);
     }
     

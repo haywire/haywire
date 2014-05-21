@@ -29,13 +29,13 @@ echo "----------------------------------------"
 
 # Getting Wrk
 if [ ! -d "bin/wrk" ]; then
-    echo "git clone -b pipeline https://github.com/wg/wrk.git bin/wrk"
-    git clone -b pipeline https://github.com/wg/wrk.git bin/wrk
+    echo "git clone https://github.com/wg/wrk.git bin/wrk"
+    git clone https://github.com/wg/wrk.git bin/wrk
 fi
 
 # Getting libuv
 if [ ! -d "lib/libuv" ]; then
-    echo "git clone -b v0.10 https://github.com/joyent/libuv.git lib/libuv"
+    echo "git clone https://github.com/joyent/libuv.git lib/libuv"
     git clone https://github.com/joyent/libuv.git lib/libuv
 fi
 

@@ -37,7 +37,7 @@ void ipc_connect_cb(uv_connect_t* req, int status)
     int rc;
     struct ipc_client_ctx* ctx;
     ctx = container_of(req, struct ipc_client_ctx, connect_req);
-    rc = uv_read2_start((uv_stream_t*)&ctx->ipc_pipe, ipc_alloc_cb, ipc_read2_cb);
+    rc = uv_read_start((uv_stream_t*)&ctx->ipc_pipe, ipc_alloc_cb, ipc_read2_cb);
 }
 
 void connection_consumer_alloc(uv_handle_t* handle, size_t suggested_size, uv_buf_t* buf)

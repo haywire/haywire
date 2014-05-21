@@ -61,6 +61,6 @@ int main(int args, char** argsv)
     /* hw_init_from_config("hello_world.conf"); */
     hw_init_with_config(&config);
     hw_http_add_route(route, get_root, NULL);
-    hw_http_open(3);
+    hw_http_open(0);
     return 0;
 }

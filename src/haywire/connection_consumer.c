@@ -43,7 +43,7 @@ void ipc_connect_cb(uv_connect_t* req, int status)
     int rc;
     struct ipc_client_ctx* ctx;
     ctx = container_of(req, struct ipc_client_ctx, connect_req);
-    rc = uv_read2_start((uv_stream_t*)&ctx->ipc_pipe, ipc_alloc_cb, ipc_read2_cb);
+    rc = uv_read_start((uv_stream_t*)&ctx->ipc_pipe, ipc_alloc_cb, ipc_read2_cb);
 }
 
 void connection_consumer_alloc(uv_handle_t* handle, size_t suggested_size, uv_buf_t* buf)
@@ -55,13 +55,13 @@ void connection_consumer_alloc(uv_handle_t* handle, size_t suggested_size, uv_bu
 
 void connection_consumer_new_connection(uv_stream_t* server_handle, int status)
 {
+    int rc = 0;
     http_connection* connection = create_http_connection();
     http_parser_init(&connection->parser, HTTP_REQUEST);
     
     connection->parser.data = connection;
     connection->stream.data = connection;
     
-    int rc = 0;
     rc = uv_tcp_init(server_handle->loop, &connection->stream);
     rc = uv_accept(server_handle, (uv_stream_t*)&connection->stream);
     rc = uv_read_start((uv_stream_t*)&connection->stream, http_stream_on_alloc, http_stream_on_read);

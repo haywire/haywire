@@ -133,6 +133,8 @@ void free_http_server()
 
 int hw_http_open(int threads)
 {
+    uv_async_t* service_handle = 0;
+
     parser_settings.on_header_field = http_request_on_header_field;
     parser_settings.on_header_value = http_request_on_header_value;
     parser_settings.on_headers_complete = http_request_on_headers_complete;
@@ -157,7 +159,7 @@ int hw_http_open(int threads)
     listeners_created_barrier = malloc(sizeof(uv_barrier_t));
     uv_barrier_init(listeners_created_barrier, listener_count + 1);
     
-    uv_async_t* service_handle = malloc(sizeof(uv_async_t));
+    service_handle = malloc(sizeof(uv_async_t));
     uv_async_init(uv_loop, service_handle, NULL);
     
     if (listener_count == 0)
@@ -168,23 +170,26 @@ int hw_http_open(int threads)
         initialize_http_request_cache();
         
         uv_ip4_addr(config->http_listen_address, config->http_listen_port, &listen_address);
-        uv_tcp_bind(&server, (const struct sockaddr*)&listen_address);
+        uv_tcp_bind(&server, (const struct sockaddr*)&listen_address, 0);
         uv_listen((uv_stream_t*)&server, 128, http_stream_on_connect);
         printf("Listening on %s:%d\n", config->http_listen_address, config->http_listen_port);
         uv_run(uv_loop, UV_RUN_DEFAULT);
     }
     else
     {
+        int i = 0;
+
         /* If we are running multi-threaded spin up the dispatcher that uses
          an IPC pipe to send socket connection requests to listening threads */
         struct server_ctx* servers;
         servers = calloc(threads, sizeof(servers[0]));
-        for (int i = 0; i < threads; i++)
+        for (i = 0; i < threads; i++)
         {
+            int rc = 0;
             struct server_ctx* ctx = servers + i;
             ctx->index = i;
             
-            int rc = uv_sem_init(&ctx->semaphore, 0);
+            rc = uv_sem_init(&ctx->semaphore, 0);
             rc = uv_thread_create(&ctx->thread_id, connection_consumer_start, ctx);
         }
         
@@ -225,32 +230,22 @@ void http_stream_on_close(uv_handle_t* handle)
 
 void http_stream_on_read(uv_stream_t* tcp, ssize_t nread, const uv_buf_t* buf)
 {
-    ssize_t parsed;
+    size_t parsed;
     http_connection* connection = (http_connection*)tcp->data;
-
-    uv_shutdown_t* req;
-    if (nread < 0)
+    
+    if (nread >= 0)
     {
-        // Error or EOF
-        if (buf->base)
+        parsed = http_parser_execute(&connection->parser, &parser_settings, buf->base, nread);
+        if (parsed < nread)
         {
-            free(buf->base);
+            /* uv_close((uv_handle_t*) &client->handle, http_stream_on_close); */
         }
-        
-        req = (uv_shutdown_t*) malloc(sizeof *req);
-        uv_close((uv_handle_t*) &connection->stream, http_stream_on_close);
-        return;
     }
-    
-    if (nread == 0)
+    else
     {
-        // Everything OK, but nothing read.
-        free(buf->base);
-        return;
+        uv_close((uv_handle_t*) &connection->stream, http_stream_on_close);
     }
-    
-    parsed = http_parser_execute(&connection->parser, &parser_settings, buf->base, nread);
-    
+    free(buf->base);
 }
 
 int http_server_write_response(hw_write_context* write_context, hw_string* response)

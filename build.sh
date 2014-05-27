@@ -29,13 +29,13 @@ echo "----------------------------------------"
 
 # Getting Wrk
 if [ ! -d "bin/wrk" ]; then
-    echo "git clone -b pipeline https://github.com/wg/wrk.git bin/wrk"
-    git clone -b pipeline https://github.com/wg/wrk.git bin/wrk
+    echo "git clone https://github.com/wg/wrk.git bin/wrk"
+    git clone https://github.com/wg/wrk.git bin/wrk
 fi
 
 # Getting libuv
 if [ ! -d "lib/libuv" ]; then
-    echo "git clone -b v0.10 https://github.com/joyent/libuv.git lib/libuv"
+    echo "git clone https://github.com/joyent/libuv.git lib/libuv"
     git clone https://github.com/joyent/libuv.git lib/libuv
 fi
 
@@ -53,7 +53,7 @@ if [ $OS = $PLATFORM_WINDOWS ]; then
     echo "----------------------------------------"
     echo "Configuring for ${OS} & Visual Studio"
     echo "----------------------------------------"
-    $GYP --depth=. -Icommon.gypi -Dlibrary=static_library -Dtarget_arch=x64 --build=$CONFIGURATION haywire.gyp
+    $GYP --depth=. -Icommon.gypi -Dlibrary=static_library -Duv_library=static_library -Dtarget_arch=x64 --build=$CONFIGURATION haywire.gyp
     msbuild /p:Configuration=$CONFIGURATION haywire.sln
 else
     # Compiling wrk
@@ -67,5 +67,5 @@ else
     echo "----------------------------------------"
     echo "Configuring and compiling for ${OS}"
     echo "----------------------------------------"
-    $GYP --depth=. -Goutput_dir=./builds/unix -Icommon.gypi -Dlibrary=static_library --build=$CONFIGURATION -f make haywire.gyp
+    $GYP --depth=. -Goutput_dir=./builds/unix -Icommon.gypi -Dlibrary=static_library -Duv_library=static_library --build=$CONFIGURATION -f make haywire.gyp
 fi

@@ -24,3 +24,5 @@
 # Build artifacts
 Default/
 Debug/
+*.sln
+*.vcxproj

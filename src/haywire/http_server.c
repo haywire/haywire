@@ -230,32 +230,22 @@ void http_stream_on_close(uv_handle_t* handle)
 
 void http_stream_on_read(uv_stream_t* tcp, ssize_t nread, const uv_buf_t* buf)
 {
-    ssize_t parsed;
+    size_t parsed;
     http_connection* connection = (http_connection*)tcp->data;
-
-    uv_shutdown_t* req;
-    if (nread < 0)
+    
+    if (nread >= 0)
     {
-        // Error or EOF
-        if (buf->base)
+        parsed = http_parser_execute(&connection->parser, &parser_settings, buf->base, nread);
+        if (parsed < nread)
         {
-            free(buf->base);
+            /* uv_close((uv_handle_t*) &client->handle, http_stream_on_close); */
         }
-        
-        req = (uv_shutdown_t*) malloc(sizeof *req);
-        uv_close((uv_handle_t*) &connection->stream, http_stream_on_close);
-        return;
     }
-    
-    if (nread == 0)
+    else
     {
-        // Everything OK, but nothing read.
-        free(buf->base);
-        return;
+        uv_close((uv_handle_t*) &connection->stream, http_stream_on_close);
     }
-    
-    parsed = http_parser_execute(&connection->parser, &parser_settings, buf->base, nread);
-    
+    free(buf->base);
 }
 
 int http_server_write_response(hw_write_context* write_context, hw_string* response)

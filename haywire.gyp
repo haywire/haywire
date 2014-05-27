@@ -175,5 +175,29 @@
 
       }, # hello_world sample
 
+      ########################################
+      # unit tests
+      ########################################
+      {
+        'target_name': 'haywire_test',
+        'product_name': 'haywire_test',
+        'type': 'executable',
+        'msvs_guid': '1E403023-7B2E-4DD7-B664-600781F7637E',
+
+        'dependencies': [
+          'haywire',
+        ],
+
+        'include_dirs': [
+          './include',
+          './lib/catch/single_include',
+        ],
+
+        'sources': [
+          'src/haywire/test/main.cpp',
+        ],
+
+      }, # unit tests
+
     ],
   }

@@ -1,6 +1,8 @@
 root = true
 
 [*]
+trim_trailing_whitespace = false
+end_of_line = lf
 
 [*.sh]
 indent_style = space

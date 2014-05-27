@@ -50,6 +50,7 @@ if [ ! -d "bin/gyp" ]; then
     echo "git clone https://chromium.googlesource.com/external/gyp.git bin/gyp"
     git clone https://chromium.googlesource.com/external/gyp.git bin/gyp
 fi
+
 if [ ! -d "lib/libuv/build" ]; then
     mkdir lib/libuv/build
     cp -Rf bin/gyp lib/libuv/build/gyp

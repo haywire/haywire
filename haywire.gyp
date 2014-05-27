@@ -184,6 +184,10 @@
         'type': 'executable',
         'msvs_guid': '1E403023-7B2E-4DD7-B664-600781F7637E',
 
+        'cflags_cc': [
+          '-fexceptions'
+        ],
+
         'dependencies': [
           'haywire',
         ],

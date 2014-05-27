@@ -15,14 +15,21 @@
 
 # Visual Studio uglies
 *.v11.suo
+*.vcproj*
 *.vcxproj.filters
 *.vcxproj.user
 *.opensdf
 *.ncrunchsolution*
 *.sdf
+*.ncb
+*.sln.cache
+*.suo
 
 # Build artifacts
 Default/
 Debug/
 *.sln
 *.vcxproj
+bin
+lib
+builds

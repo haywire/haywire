@@ -1,6 +1,6 @@
 {
     'targets': [
-      
+
       ########################################
       # haywire static library
       ########################################
@@ -9,7 +9,7 @@
         'product_name': 'haywire',
         'type': 'static_library',
         'msvs_guid': '5ECEC9E5-8F23-47B6-93E0-C3B328B3BE65',
-        
+
         'dependencies': [
           './lib/libuv/uv.gyp:libuv',
         ],
@@ -80,7 +80,7 @@
         'product_name': 'haywire',
         'type': 'shared_library',
         'msvs_guid': '5ECEC9E5-8F23-47B6-93E0-C3B328B3BE65',
-        
+
         'dependencies': [
           './lib/libuv/uv.gyp:libuv',
         ],
@@ -121,7 +121,7 @@
           'src/haywire/connection_consumer.h',
           'src/haywire/connection_consumer.c',
           'src/haywire/connection_dispatcher.h',
-          'src/haywire/connection_dispatcher.c',          
+          'src/haywire/connection_dispatcher.c',
           'src/haywire/http_connection.h',
           'src/haywire/http_parser.h',
           'src/haywire/http_parser.c',
@@ -156,7 +156,7 @@
         'dependencies': [
           'haywire',
         ],
-        
+
         'include_dirs': [
           './include',
         ],

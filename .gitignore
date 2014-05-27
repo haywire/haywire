@@ -13,6 +13,10 @@
 *.la
 *.a
 
+# Emacs backup and temp files
+.#*
+*~
+
 # Visual Studio uglies
 *.v11.suo
 *.vcproj*
@@ -33,3 +37,4 @@ Debug/
 bin
 lib
 builds
+TAGS

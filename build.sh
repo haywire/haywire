@@ -39,6 +39,12 @@ if [ ! -d "lib/libuv" ]; then
     git clone https://github.com/joyent/libuv.git lib/libuv
 fi
 
+# Getting Catch (unit test framework)
+if [ ! -d "lib/catch" ]; then
+    echo "git clone https://github.com/philsquared/catch.git lib/catch"
+    git clone https://github.com/philsquared/catch.git lib/catch
+fi
+
 # Getting Gyp build environment.
 if [ ! -d "bin/gyp" ]; then
     echo "git clone https://chromium.googlesource.com/external/gyp.git bin/gyp"

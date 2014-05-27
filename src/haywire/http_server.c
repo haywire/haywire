@@ -218,6 +218,8 @@ void http_stream_on_connect(uv_stream_t* stream, int status)
 
 void http_stream_on_alloc(uv_handle_t* client, size_t suggested_size, uv_buf_t* buf)
 {
+    /* TODO(Sam): check malloc return value */
+    /* TODO(Sam): test if manual freelist improves performance */
     buf->base = malloc(suggested_size);
     buf->len = suggested_size;
 }
@@ -235,6 +237,7 @@ void http_stream_on_read(uv_stream_t* tcp, ssize_t nread, const uv_buf_t* buf)
     
     if (nread >= 0)
     {
+        /* TODO(Sam): consider using uv_queue_work to put parsing on separate thread */
         parsed = http_parser_execute(&connection->parser, &parser_settings, buf->base, nread);
         if (parsed < nread)
         {

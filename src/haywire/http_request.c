@@ -198,6 +198,7 @@ int http_request_on_body(http_parser *parser, const char *at, size_t length)
     http_connection* connection = (http_connection*)parser->data;
     if (length != 0)
     {
+        /* TODO(Sam): realloc can return NULL */
         connection->request->body->value = realloc(connection->request->body->value, connection->request->body->length + length);
         memcpy(connection->request->body->value + connection->request->body->length, at, length);
         connection->request->body->length += length;
@@ -259,6 +260,7 @@ void get_404_response(http_request* request, http_response* response)
     }
 }
 
+/* TODO(Sam): make sure this happens on appropriate thread */
 int http_request_on_message_complete(http_parser* parser)
 {
     http_connection* connection = (http_connection*)parser->data;

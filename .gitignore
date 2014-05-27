@@ -30,3 +30,6 @@ Default/
 Debug/
 *.sln
 *.vcxproj
+bin
+lib
+builds

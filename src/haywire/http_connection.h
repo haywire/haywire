@@ -3,8 +3,7 @@
 #include "http_parser.h"
 #include "http_request.h"
 
-typedef struct
-{
+typedef struct {
     uv_tcp_t stream;
     http_parser parser;
     uv_write_t write_req;

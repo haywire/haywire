@@ -5,12 +5,10 @@
 
 #define CRLF "\r\n"
 
-void response_complete(void* user_data)
-{
+void response_complete(void* user_data) {
 }
 
-void get_root(http_request* request, hw_http_response* response, void* user_data)
-{
+void get_root(http_request* request, hw_http_response* response, void* user_data) {
     hw_string status_code;
     hw_string content_type_name;
     hw_string content_type_value;
@@ -29,32 +27,23 @@ void get_root(http_request* request, hw_http_response* response, void* user_data
     SETSTRING(body, "hello world");
     hw_set_body(response, &body);
     
-    if (request->keep_alive)
-    {
+    if (request->keep_alive) {
         SETSTRING(keep_alive_name, "Connection");
-        
         SETSTRING(keep_alive_value, "Keep-Alive");
         hw_set_response_header(response, &keep_alive_name, &keep_alive_value);
-    }
-    else
-    {
+    } else {
         hw_set_http_version(response, 1, 0);
     }
-    
     hw_http_response_send(response, "user_data", response_complete);
 }
 
-int main(int args, char** argsv)
-{
+int main(int args, char** argsv) {
     char route[] = "/";
     configuration config;
     config.http_listen_address = "0.0.0.0";
-    if (args > 1)
-    {
+    if (args > 1) {
         config.http_listen_port = atoi(argsv[1]);
-    }
-    else
-    {
+    } else {
         config.http_listen_port = 8000;
     }
 

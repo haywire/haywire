@@ -53,7 +53,6 @@ typedef unsigned __int64 uint64_t;
 /* Maximium header size allowed */
 #define HTTP_MAX_HEADER_SIZE (80*1024)
 
-
 typedef struct http_parser http_parser;
 typedef struct http_parser_settings http_parser_settings;
 
@@ -109,8 +108,7 @@ typedef int (*http_cb) (http_parser*);
   XX(24, PATCH,       PATCH)        \
   XX(25, PURGE,       PURGE)        \
 
-enum http_method
-  {
+enum http_method {
 #define XX(num, name, string) HTTP_##name = num,
   HTTP_METHOD_MAP(XX)
 #undef XX

@@ -19,8 +19,7 @@ static const char stats_response[] =
   CRLF
   "stats printed" CRLF;
 
-void get_server_stats(http_request* request, hw_http_response* response, void* user_data)
-{
+void get_server_stats(http_request* request, hw_http_response* response, void* user_data) {
     hw_string status_code;
     hw_string content_type_name;
     hw_string content_type_value;
@@ -39,23 +38,19 @@ void get_server_stats(http_request* request, hw_http_response* response, void* u
     SETSTRING(body, "stats printed");
     hw_set_body(response, &body);
     
-    if (request->keep_alive)
-    {
+    if (request->keep_alive) {
         SETSTRING(keep_alive_name, "Connection");
-        
         SETSTRING(keep_alive_value, "Keep-Alive");
         hw_set_response_header(response, &keep_alive_name, &keep_alive_value);
-    }
-    else
-    {
+    } else {
         hw_set_http_version(response, 1, 0);
     }
     
     hw_http_response_send(response, NULL, NULL);
     
     printf("connections_created_total: %d\nconnections_destroyed_total: %d\nrequests_created_total: %d\nrequests_destroyed_total: %d\n\n",
-        stat_connections_created_total,
-        stat_connections_destroyed_total,
-        stat_requests_created_total,
-        stat_requests_destroyed_total);
+           stat_connections_created_total,
+           stat_connections_destroyed_total,
+           stat_requests_created_total,
+           stat_requests_destroyed_total);
 }

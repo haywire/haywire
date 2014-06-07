@@ -29,8 +29,7 @@ int last_was_value;
 
 KHASH_MAP_INIT_STR(string_hashmap, char*)
 
-void print_headers(http_request* request)
-{
+void print_headers(http_request* request) {
     const char* k;
     const char* v;
 
@@ -38,8 +37,7 @@ void print_headers(http_request* request)
     kh_foreach(h, k, v, { printf("KEY: %s VALUE: %s\n", k, v); });
 }
 
-void set_header(http_request* request, char* name, char* value)
-{
+void set_header(http_request* request, char* name, char* value) {
     int ret;
     khiter_t k;
     khash_t(string_hashmap) *h = request->headers;
@@ -47,21 +45,18 @@ void set_header(http_request* request, char* name, char* value)
     kh_value(h, k) = dupstr(value);
 }
 
-void* get_header(http_request* request, char* name)
-{
+void* get_header(http_request* request, char* name) {
     khash_t(string_hashmap) *h = request->headers;
     khiter_t k = kh_get(string_hashmap, h, name);
     void* val = kh_value(h, k);
     int is_missing = (k == kh_end(h));
-    if (is_missing)
-    {
+    if (is_missing) {
         val = NULL;
     }
     return val;
 }
 
-http_request* create_http_request(http_connection* connection)
-{
+http_request* create_http_request(http_connection* connection) {
     http_request* request = malloc(sizeof(http_request));
     request->url = NULL;
     request->headers = kh_init(string_hashmap);
@@ -75,8 +70,7 @@ http_request* create_http_request(http_connection* connection)
     return request;
 }
 
-void free_http_request(http_request* request)
-{
+void free_http_request(http_request* request) {
     khash_t(string_hashmap) *h = request->headers;
     const char* k;
     const char* v;
@@ -87,8 +81,7 @@ void free_http_request(http_request* request)
     });
     kh_destroy(string_hashmap, request->headers);
     free(request->url);
-    if (request->body->length > 0)
-    {
+    if (request->body->length > 0) {
         free(request->body->value);
     }
     free(request->body);
@@ -96,21 +89,18 @@ void free_http_request(http_request* request)
     INCREMENT_STAT(stat_requests_destroyed_total);
 }
 
-char* hw_get_header(http_request* request, char* key)
-{
+char* hw_get_header(http_request* request, char* key) {
     void* value = get_header(request, key);
     return value;
 }
 
-int http_request_on_message_begin(http_parser* parser)
-{
+int http_request_on_message_begin(http_parser* parser) {
     http_connection* connection = (http_connection*)parser->data;
     connection->request = create_http_request(connection);
     return 0;
 }
 
-int http_request_on_url(http_parser *parser, const char *at, size_t length)
-{
+int http_request_on_url(http_parser *parser, const char *at, size_t length) {
     http_connection* connection = (http_connection*)parser->data;
     char *data = (char *)malloc(sizeof(char) * length + 1);
 
@@ -122,16 +112,13 @@ int http_request_on_url(http_parser *parser, const char *at, size_t length)
     return 0;
 }
 
-int http_request_on_header_field(http_parser *parser, const char *at, size_t length)
-{
+int http_request_on_header_field(http_parser *parser, const char *at, size_t length) {
     http_connection* connection = (http_connection*)parser->data;
     int i = 0;
 
-    if (last_was_value && connection->current_header_key_length > 0)
-    {
+    if (last_was_value && connection->current_header_key_length > 0) {
         // Save last read header key/value pair.
-        for (i = 0; connection->current_header_key[i]; i++)
-        {
+        for (i = 0; connection->current_header_key[i]; i++) {
             connection->current_header_key[i] = tolower(connection->current_header_key[i]);
         }
 
@@ -147,12 +134,10 @@ int http_request_on_header_field(http_parser *parser, const char *at, size_t len
     return 0;
 }
 
-int http_request_on_header_value(http_parser *parser, const char *at, size_t length)
-{
+int http_request_on_header_value(http_parser *parser, const char *at, size_t length) {
     http_connection* connection = (http_connection*)parser->data;
 
-    if (!last_was_value && connection->current_header_value_length > 0)
-    {
+    if (!last_was_value && connection->current_header_value_length > 0) {
         /* Start of a new header */
         connection->current_header_value_length = 0;
     }
@@ -163,18 +148,14 @@ int http_request_on_header_value(http_parser *parser, const char *at, size_t len
     return 0;
 }
 
-int http_request_on_headers_complete(http_parser* parser)
-{
+int http_request_on_headers_complete(http_parser* parser) {
     http_connection* connection = (http_connection*)parser->data;
     int i = 0;
 
-    if (connection->current_header_key_length > 0)
-    {
-        if (connection->current_header_value_length > 0)
-        {
+    if (connection->current_header_key_length > 0) {
+        if (connection->current_header_value_length > 0) {
             /* Store last header */
-            for (i = 0; connection->current_header_key[i]; i++)
-            {
+            for (i = 0; connection->current_header_key[i]; i++) {
                 connection->current_header_key[i] = tolower(connection->current_header_key[i]);
             }
             set_header(connection->request, connection->current_header_key, connection->current_header_value);
@@ -193,11 +174,9 @@ int http_request_on_headers_complete(http_parser* parser)
     return 0;
 }
 
-int http_request_on_body(http_parser *parser, const char *at, size_t length)
-{
+int http_request_on_body(http_parser *parser, const char *at, size_t length) {
     http_connection* connection = (http_connection*)parser->data;
-    if (length != 0)
-    {
+    if (length != 0) {
         connection->request->body->value = realloc(connection->request->body->value, connection->request->body->length + length);
         memcpy(connection->request->body->value + connection->request->body->length, at, length);
         connection->request->body->length += length;
@@ -205,8 +184,7 @@ int http_request_on_body(http_parser *parser, const char *at, size_t length)
     return 0;
 }
 
-hw_route_entry* get_route_callback(char* url)
-{
+hw_route_entry* get_route_callback(char* url) {
     hw_route_entry* route_entry = NULL;
     
     const char* k;
@@ -222,12 +200,10 @@ hw_route_entry* get_route_callback(char* url)
             route_entry = (hw_route_entry*)v;
         }
     });
-     
     return route_entry;
 }
 
-void get_404_response(http_request* request, http_response* response)
-{
+void get_404_response(http_request* request, http_response* response) {
     hw_string status_code;
     hw_string content_type_name;
     hw_string content_type_value;
@@ -246,33 +222,26 @@ void get_404_response(http_request* request, http_response* response)
     SETSTRING(body, "404 Not Found");
     hw_set_body(response, &body);
     
-    if (request->keep_alive)
-    {
+    if (request->keep_alive) {
         SETSTRING(keep_alive_name, "Connection");
         
         SETSTRING(keep_alive_value, "Keep-Alive");
         hw_set_response_header(response, &keep_alive_name, &keep_alive_value);
-    }
-    else
-    {
+    } else {
         hw_set_http_version(response, 1, 0);
     }
 }
 
-int http_request_on_message_complete(http_parser* parser)
-{
+int http_request_on_message_complete(http_parser* parser) {
     http_connection* connection = (http_connection*)parser->data;
     hw_route_entry* route_entry = get_route_callback(connection->request->url);
     hw_string* response_buffer;
     hw_write_context* write_context;
     hw_http_response* response = hw_create_http_response(connection);
     
-    if (route_entry != NULL)
-    {
+    if (route_entry != NULL) {
         route_entry->callback(connection->request, response, route_entry->user_data);
-    }
-    else
-    {
+    } else {
         // 404 Not Found.
         write_context = malloc(sizeof(hw_write_context));
         write_context->connection = connection;
@@ -289,8 +258,7 @@ int http_request_on_message_complete(http_parser* parser)
     return 0;
 }
 
-void hw_http_response_send(hw_http_response* response, void* user_data, http_response_complete_callback callback)
-{
+void hw_http_response_send(hw_http_response* response, void* user_data, http_response_complete_callback callback) {
     hw_write_context* write_context = malloc(sizeof(hw_write_context));
     http_response* resp = (http_response*)response;
     hw_string* response_buffer = create_response_buffer(response);

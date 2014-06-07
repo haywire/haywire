@@ -8,19 +8,13 @@ extern "C" {
 
 #ifdef _WIN32
     /* Windows - set up dll import/export decorators. */
-    #ifdef BUILDING_HAYWIRE_SHARED
-        /* Building shared library. */
+    #if defined(BUILDING_HAYWIRE_SHARED) || defined(USING_HAYWIRE_SHARED)
+        /* Building or using shared library. */
         #define HAYWIRE_EXTERN __declspec(dllexport)
     #else
-        #ifdef USING_HAYWIRE_SHARED
-            /* Using shared library. */
-            #define HAYWIRE_EXTERN __declspec(dllimport)
-        #else
-            /* Building static library. */
-            #define HAYWIRE_EXTERN /* nothing */
-        #endif
+        /* Building static library. */
+		#define HAYWIRE_EXTERN /* nothing */
     #endif
-
     #define HAYWIRE_CALLING_CONVENTION __cdecl
 #else
     /* Building static library. */
@@ -124,8 +118,7 @@ XX(23, UNSUBSCRIBE, UNSUBSCRIBE)  \
 XX(24, PATCH,       PATCH)        \
 XX(25, PURGE,       PURGE)        \
 
-enum hw_http_method
-{
+enum hw_http_method {
 #define XX(num, name, string) HW_HTTP_##name = num,
     HW_HTTP_METHOD_MAP(XX)
 #undef XX
@@ -135,20 +128,17 @@ enum hw_http_method
 #define SETSTRING(s,val) s.value=val; s.length=STRLENOF(val)
 #define APPENDSTRING(s,val) memcpy((char*)s->value + s->length, val, STRLENOF(val)); s->length+=STRLENOF(val)
 
-typedef struct
-{
+typedef struct {
     char* value;
     size_t length;
 } hw_string;
 
-typedef struct
-{
+typedef struct {
     char* http_listen_address;
     int http_listen_port;
 } configuration;
 
-typedef struct
-{
+typedef struct {
     unsigned short http_major;
     unsigned short http_minor;
     unsigned char method;
@@ -160,7 +150,6 @@ typedef struct
 } http_request;
 
 typedef	void* hw_http_response;
-
 typedef void (HAYWIRE_CALLING_CONVENTION *http_request_callback)(http_request* request, hw_http_response* response, void* user_data);
 typedef void (HAYWIRE_CALLING_CONVENTION *http_response_complete_callback)(void* user_data);
 

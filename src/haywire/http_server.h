@@ -4,21 +4,18 @@
 #include "http_connection.h"
 #include "http_parser.h"
 
-typedef struct
-{
+typedef struct {
     http_request_callback callback;
     void* user_data;
 } hw_route_entry;
 
-typedef struct
-{
+typedef struct {
     http_connection* connection;
     void* user_data;
     http_response_complete_callback callback;
 } hw_write_context;
 
-union stream_handle
-{
+union stream_handle {
     uv_pipe_t pipe;
     uv_tcp_t tcp;
 };

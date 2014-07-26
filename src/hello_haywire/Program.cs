@@ -77,8 +77,8 @@ namespace hello_haywire
             }
             else
             {
-                //TODO: create managed wrapper for hw_set_http_version
                 // hw_set_http_version(response, 1, 0);
+                resp.SetHttpVersion(1, 0);
             }
 
             //hw_http_response_send(response, "user_data", response_complete);

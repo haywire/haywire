@@ -258,5 +258,9 @@ namespace haywire
 
         [DllImport("haywire", EntryPoint = "hw_http_response_send", CallingConvention = CallingConvention.Cdecl)]
         public static extern void SendResponse(IntPtr response, IntPtr state, HaywireResponseCompleteCallback completeCallback);
+
+        [DllImport("haywire", EntryPoint = "hw_set_http_version", CallingConvention = CallingConvention.Cdecl)]
+        public static extern void SetResponseHttpVersion(IntPtr response, UInt16 major, UInt16 minor);
+
     }
 }

@@ -23,8 +23,8 @@ namespace haywire
             
             // TODO: add memory check, store str somewhere 
             var code = new HaywireString();
-            code.value = str; 
-            code.length = (uint)statusCode.Length; 
+            code.value = str;
+            code.length = (uint) statusCode.Length;
             HaywireInterop.SetResponseStatusCode(handle, code); 
         }
 
@@ -56,6 +56,12 @@ namespace haywire
             HaywireInterop.SetResponseBody(handle, code);
         }
 
+        public void SetHttpVersion(int major,int minor)
+        {
+            HaywireInterop.SetResponseHttpVersion(this.handle, (UInt16)major, (UInt16)minor);
+        }
+
+
         public void Send(HaywireResponseCompleteCallback callback)
         {
             HaywireInterop.SendResponse(this.handle, IntPtr.Zero, callback);
@@ -81,5 +87,9 @@ namespace haywire
     
         //    return tcs.Task; 
         //}
+
+
+
+       
     }
 }

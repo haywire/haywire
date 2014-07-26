@@ -18,6 +18,7 @@
           ['OS=="linux"', {
             'defines': [
               'PLATFORM_LINUX',
+              '_GNU_SOURCE',
             ],
             'cflags': [
               '-std=gnu99',
@@ -88,6 +89,7 @@
           ['OS=="linux"', {
             'defines': [
               'PLATFORM_LINUX',
+              '_GNU_SOURCE',
             ],
             'cflags': [
               '-std=gnu99',

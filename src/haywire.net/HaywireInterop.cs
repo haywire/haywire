@@ -180,12 +180,34 @@ namespace haywire
     [StructLayoutAttribute(LayoutKind.Sequential)]
     public class HaywireString
     {
+        public HaywireString() { }
+        public HaywireString(String content)
+        {
+            // TODO: add memory check
+            IntPtr str = Marshal.StringToHGlobalAnsi(content);
+
+            this.value = str;
+            this.length = (uint)content.Length;
+        }
         /// char*
         //[MarshalAsAttribute(UnmanagedType.LPStr)]
         public IntPtr value;
-    
+
         /// size_t->unsigned int
         public uint length;
+
+        public static explicit operator HaywireString(String b)
+        {
+            return new HaywireString(b);
+        }
+        public static explicit operator String(HaywireString b)
+        {
+            return Marshal.PtrToStringAnsi(b.value, (int)b.length);
+        }
+        public override string ToString()
+        {
+            return Marshal.PtrToStringAnsi(this.value, (int)this.length);
+        }
     }
 
     [StructLayout(LayoutKind.Sequential)]

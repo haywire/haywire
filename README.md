@@ -5,7 +5,7 @@ Haywire is an asynchronous HTTP server framework written in C. The goal of Haywi
 
 Haywire uses the event loop based libuv platform layer that node.js is built on top of (also written in C). libuv abstracts IOCP on Windows and epoll/kqueue/event ports/etc. on Unix systems to provide efficient asynchronous I/O on all supported platforms.
 
-Haywire isn't very useful yet but I wanted to open source it from the very beginning. I started experimenting with a HTTP server for Dazzle queries and I decided I would split it into it's own project.
+Haywire isn't very useful yet but I wanted to open source it from the very beginning. I started experimenting with a HTTP server for Dazzle queries and I decided I would split it into its own project.
 
 ## Features
 - Cross platform (Windows, Linux, OSX)

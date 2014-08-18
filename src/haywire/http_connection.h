@@ -14,4 +14,5 @@ typedef struct
     char current_header_value[1024];
     int current_header_value_length;
     int keep_alive;
+    int last_was_value;
 } http_connection;

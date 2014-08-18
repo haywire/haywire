@@ -25,11 +25,9 @@ static const char response_404[] =
   "404 Not Found" CRLF
   ;
 
-int last_was_value;
-
 KHASH_MAP_INIT_STR(string_hashmap, char*)
 
-void print_headers(http_request* request)
+void hw_print_request_headers(http_request* request)
 {
     const char* k;
     const char* v;
@@ -127,7 +125,7 @@ int http_request_on_header_field(http_parser *parser, const char *at, size_t len
     http_connection* connection = (http_connection*)parser->data;
     int i = 0;
 
-    if (last_was_value && connection->current_header_key_length > 0)
+    if (connection->last_was_value && connection->current_header_key_length > 0)
     {
         // Save last read header key/value pair.
         for (i = 0; connection->current_header_key[i]; i++)
@@ -143,7 +141,7 @@ int http_request_on_header_field(http_parser *parser, const char *at, size_t len
     memcpy((char *)&connection->current_header_key[connection->current_header_key_length], at, length);
     connection->current_header_key_length += length;
     connection->current_header_key[connection->current_header_key_length] = '\0';
-    last_was_value = 0;
+    connection->last_was_value = 0;
     return 0;
 }
 
@@ -151,7 +149,7 @@ int http_request_on_header_value(http_parser *parser, const char *at, size_t len
 {
     http_connection* connection = (http_connection*)parser->data;
 
-    if (!last_was_value && connection->current_header_value_length > 0)
+    if (!connection->last_was_value && connection->current_header_value_length > 0)
     {
         /* Start of a new header */
         connection->current_header_value_length = 0;
@@ -159,7 +157,7 @@ int http_request_on_header_value(http_parser *parser, const char *at, size_t len
     memcpy((char *)&connection->current_header_value[connection->current_header_value_length], at, length);
     connection->current_header_value_length += length;
     connection->current_header_value[connection->current_header_value_length] = '\0';
-    last_was_value = 1;
+    connection->last_was_value = 1;
     return 0;
 }
 

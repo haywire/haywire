@@ -17,44 +17,29 @@ namespace haywire
             this.handle = handle;
         }
 
-        public void SetCode(string statusCode) 
-        { 
-            IntPtr str = Marshal.StringToHGlobalAnsi(statusCode);
-            
+        public void SetCode(string statusCode)
+        {
             // TODO: add memory check, store str somewhere 
-            var code = new HaywireString();
-            code.value = str; 
-            code.length = (uint)statusCode.Length; 
-            HaywireInterop.SetResponseStatusCode(handle, code); 
+            HaywireInterop.SetResponseStatusCode(handle, (HaywireString)statusCode);
         }
 
         public void SetHeader(string name, string value)
         {
-            IntPtr nameHandle = Marshal.StringToHGlobalAnsi(name);
-
             // TODO: add memory check, store str somewhere 
-            var nameString = new HaywireString();
-            nameString.value = nameHandle;
-            nameString.length = (uint)name.Length;
-
-            IntPtr valueHandle = Marshal.StringToHGlobalAnsi(value);
-            var valueString = new HaywireString();
-            valueString.value = valueHandle;
-            valueString.length = (uint)value.Length;
-
-            HaywireInterop.SetResponseHeader(handle, nameString, valueString);
+            HaywireInterop.SetResponseHeader(handle, (HaywireString)name, (HaywireString)value);
         }
 
         public void SetBody(string body)
         {
-            IntPtr str = Marshal.StringToHGlobalAnsi(body);
-
             // TODO: add memory check, store str somewhere 
-            var code = new HaywireString();
-            code.value = str;
-            code.length = (uint)body.Length;
-            HaywireInterop.SetResponseBody(handle, code);
+            HaywireInterop.SetResponseBody(handle, (HaywireString)body);
         }
+
+        public void SetHttpVersion(int major, int minor)
+        {
+            HaywireInterop.SetResponseHttpVersion(this.handle, (UInt16)major, (UInt16)minor);
+        }
+
 
         public void Send(HaywireResponseCompleteCallback callback)
         {
@@ -78,8 +63,12 @@ namespace haywire
         //    {
         //        tcs.SetException(exc);
         //    } 
-    
+
         //    return tcs.Task; 
         //}
+
+
+
+
     }
 }

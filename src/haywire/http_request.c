@@ -234,26 +234,26 @@ void get_404_response(http_request* request, http_response* response)
     hw_string keep_alive_value;
     
     SETSTRING(status_code, HTTP_STATUS_404);
-    hw_set_response_status_code(response, &status_code);
+    hw_set_response_status_code((void*)response, &status_code);
     
     SETSTRING(content_type_name, "Content-Type");
     
     SETSTRING(content_type_value, "text/html");
-    hw_set_response_header(response, &content_type_name, &content_type_value);
+    hw_set_response_header((void*)response, &content_type_name, &content_type_value);
     
     SETSTRING(body, "404 Not Found");
-    hw_set_body(response, &body);
+    hw_set_body((void*)response, &body);
     
     if (request->keep_alive)
     {
         SETSTRING(keep_alive_name, "Connection");
         
         SETSTRING(keep_alive_value, "Keep-Alive");
-        hw_set_response_header(response, &keep_alive_name, &keep_alive_value);
+        hw_set_response_header((void*)response, &keep_alive_name, &keep_alive_value);
     }
     else
     {
-        hw_set_http_version(response, 1, 0);
+        hw_set_http_version((void*)response, 1, 0);
     }
 }
 

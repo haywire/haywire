@@ -51,6 +51,11 @@ uv_async_t* listener_async_handles;
 uv_loop_t* listener_event_loops;
 uv_barrier_t* listeners_created_barrier;
 
+void* hw_get_eventloop()
+{
+    return uv_loop;
+}
+
 http_connection* create_http_connection()
 {
     http_connection* connection = malloc(sizeof(http_connection));

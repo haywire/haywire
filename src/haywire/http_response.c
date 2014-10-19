@@ -63,6 +63,12 @@ hw_string* create_response_buffer(hw_http_response* response)
     hw_string* response_string = malloc(sizeof(hw_string));
     hw_string* cached_entry = get_cached_request(resp->status_code.value);
     hw_string content_length;
+    
+    if (cached_entry == NULL)
+    {
+        // TODO: Didn't get a valid response created from the cache
+        // so respond with an error.
+    }
 
     int i = 0;
 

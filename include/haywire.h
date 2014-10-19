@@ -164,6 +164,8 @@ typedef	void* hw_http_response;
 typedef void (HAYWIRE_CALLING_CONVENTION *http_request_callback)(http_request* request, hw_http_response* response, void* user_data);
 typedef void (HAYWIRE_CALLING_CONVENTION *http_response_complete_callback)(void* user_data);
 
+HAYWIRE_EXTERN void* hw_get_eventloop();
+
 HAYWIRE_EXTERN int hw_init_from_config(char* configuration_filename);
 HAYWIRE_EXTERN int hw_init_with_config(configuration* config);
 HAYWIRE_EXTERN int hw_http_open(int threads);

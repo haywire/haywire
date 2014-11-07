@@ -72,6 +72,7 @@ add_definitions(-Wall)
 add_definitions(-Wextra)
 add_definitions(-Wcast-align)
 add_definitions(-w)
+add_definitions(-fPIC)
 
 file(GLOB_RECURSE HAYWIRE_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/haywire/*.h
@@ -106,11 +107,8 @@ include_directories(${CMAKE_SOURCE_DIR}/include)
 
 find_package(Threads REQUIRED)
 
-add_executable (hello_world
-    ${HELLOWORLD_SOURCES})
+add_executable (hello_world ${HELLOWORLD_SOURCES})
 
 # Libraries to link in reverse order because that's what ld requires.
-target_link_libraries (hello_world ${CMAKE_THREAD_LIBS_INIT}
-    ${CMAKE_SOURCE_DIR}/Build/libhaywire_static.a)
-target_link_libraries(hello_world ${CMAKE_THREAD_LIBS_INIT}
-    ${CMAKE_SOURCE_DIR}/lib/libuv/.libs/libuv.a)
+target_link_libraries (hello_world ${CMAKE_THREAD_LIBS_INIT} haywire_static ${CMAKE_SOURCE_DIR}/builds/unix/debug/libuv.a pthread)
+

@@ -3,27 +3,41 @@
 #include "haywire.h"
 #include "http_connection.h"
 #include "http_parser.h"
+/** @file http_server.h */
 
+/**
+ * A datatype structure used to describe
+ * the handling of a single route entry in
+ * the route table
+ */
 typedef struct
 {
-    http_request_callback callback;
-    void* user_data;
+    http_request_callback callback; /**< The callback for handling the route request */
+    void* user_data; /**< Any data to bundle with the request handling */
 } hw_route_entry;
 
+/**
+ * A datatype structure to hold a stream context for writing
+ */
 typedef struct
 {
-    http_connection* connection;
-    void* user_data;
-    http_response_complete_callback callback;
+    http_connection* connection; /**< The http_connection description data structure*/
+    void* user_data; /**< Any user data bundled into the request */
+    http_response_complete_callback callback; /**< Callback on write completion */
 } hw_write_context;
 
+/**
+ * A union that holds the handle to a stream - TCP socket or Pipe
+ */
 union stream_handle
 {
     uv_pipe_t pipe;
     uv_tcp_t tcp;
 };
 
+/** The hashtable of routes (route table) */
 extern void* routes;
+
 extern uv_loop_t* uv_loop;
 extern hw_string* http_v1_0;
 extern hw_string* http_v1_1;

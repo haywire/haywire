@@ -3,6 +3,7 @@
 #pragma comment(lib, "psapi.lib")
 #pragma comment(lib, "Iphlpapi.lib")
 
+/** @file http_server.c */
 #ifdef PLATFORM_POSIX
 #include <signal.h>
 #endif // PLATFORM_POSIX
@@ -26,7 +27,9 @@
 #include "route_compare_method.h"
 #include "configuration/configuration.h"
 
+/** Macro for print out Libuv errors to the stderr stream */
 #define UVERR(err, msg) fprintf(stderr, "%s: %s\n", msg, uv_strerror(err))
+
 #define CHECK(r, msg) \
 if (r) { \
 uv_err_t err = uv_last_error(uv_loop); \
@@ -51,6 +54,13 @@ uv_async_t* listener_async_handles;
 uv_loop_t* listener_event_loops;
 uv_barrier_t* listeners_created_barrier;
 
+/**
+ * Initialise a new http_connection structure
+ *
+ * @note If DEBUG is defined - will increment the number of created connections in server stats
+ *
+ * @return A pointer to the http_connection; otherwise NULL
+ */
 http_connection* create_http_connection()
 {
     http_connection* connection = malloc(sizeof(http_connection));
@@ -64,6 +74,14 @@ http_connection* create_http_connection()
     return connection;
 }
 
+/**
+ * Free the memory of an allocated http_connection structure
+ *
+ * @note If DEBUG is defined - will increment the number of 
+ *       destroyed connections in server stats
+ *
+ * @param connection A pointer to an http_connection structure
+ */
 void free_http_connection(http_connection* connection)
 {
     if (connection->request != NULL)
@@ -75,6 +93,13 @@ void free_http_connection(http_connection* connection)
     INCREMENT_STAT(stat_connections_destroyed_total);
 }
 
+/**
+ * Adds an initialised route entry to the hashtable
+ *
+ * @param hashmap A pointer to the route table hashmap
+ * @param name The string URL representation of the route
+ * @param route_entry The initialised route_entry
+ */
 void set_route(void* hashmap, char* name, hw_route_entry* route_entry)
 {
     int ret;
@@ -84,6 +109,13 @@ void set_route(void* hashmap, char* name, hw_route_entry* route_entry)
     kh_value(h, k) = route_entry;
 }
 
+/**
+ * Create and add a new route to the server
+ *
+ * @param route The server URL of the route to add
+ * @param callback The callback function for when the root is requested
+ * @param user_data The user data to include on a request of the route; can be NULL
+ */
 void hw_http_add_route(char *route, http_request_callback callback, void* user_data)
 {
     hw_route_entry* route_entry = malloc(sizeof(hw_route_entry));
@@ -95,9 +127,15 @@ void hw_http_add_route(char *route, http_request_callback callback, void* user_d
         routes = kh_init(string_hashmap);
     }
     set_route(routes, route, route_entry);
-    printf("Added route %s\n", route); // TODO: Replace with logging instead.
+    printf("Added route %s\n", route); /* TODO: Replace with logging instead. */
 }
 
+/**
+ * Initialise the server from a configuration file
+ *
+ * @param configuration_filename The path and name to the configuration file
+ * @return 0 on success; otherwise 1
+ */
 int hw_init_from_config(char* configuration_filename)
 {
     configuration* config = load_configuration(configuration_filename);
@@ -108,6 +146,12 @@ int hw_init_from_config(char* configuration_filename)
     return hw_init_with_config(config);
 }
 
+/**
+ * Initialise with a configuration loaded in memory
+ *
+ * @note  if DEBUG is defined - will add a new route '/stats'
+ * @param c A configuration data structure
+ */
 int hw_init_with_config(configuration* c)
 {
     int http_listen_address_length;
@@ -115,7 +159,7 @@ int hw_init_with_config(configuration* c)
     char route[] = "/stats";
     hw_http_add_route(route, get_server_stats, NULL);
 #endif /* DEBUG */
-    /* Copy the configuration */
+    /* Copy the configuration to the extern */
     config = malloc(sizeof(configuration));
     config->http_listen_address = dupstr(c->http_listen_address);
     config->http_listen_port = c->http_listen_port;
@@ -126,6 +170,11 @@ int hw_init_with_config(configuration* c)
     return 0;
 }
 
+/**
+ * Free the http route table
+ *
+ * @todo Shutdown any incoming requests
+ */
 void free_http_server()
 {
     /* TODO: Shut down accepting incoming requests */
@@ -136,10 +185,21 @@ void free_http_server()
     kh_destroy(string_hashmap, routes);
 }
 
+/**
+ * Start the http server in single or multi-threaded mode
+ *
+ * @note
+ *    If threads are >0 - it will fire up the threads using libuv
+ *    and begin dispatching connection requests using an IPC server
+ *    that is started via the function start_connection_dispatching()
+ *
+ * @param threads The number of worker threads to start in the pool- 0 for single thread; otherwise >0
+ */
 int hw_http_open(int threads)
 {
     uv_async_t* service_handle = 0;
 
+    /* set the callbacks for the http parser */
     parser_settings.on_header_field = http_request_on_header_field;
     parser_settings.on_header_value = http_request_on_header_value;
     parser_settings.on_headers_complete = http_request_on_headers_complete;
@@ -207,6 +267,12 @@ int hw_http_open(int threads)
     return 0;
 }
 
+/**
+ * Callback for accepting and reading a connection request on a socket
+ *
+ * @param stream A pointer to the stream handle
+ * @param status The status of the request- 0 on success; otherwise <0
+ */
 void http_stream_on_connect(uv_stream_t* stream, int status)
 {
     http_connection* connection = create_http_connection();
@@ -221,18 +287,39 @@ void http_stream_on_connect(uv_stream_t* stream, int status)
     uv_read_start((uv_stream_t*)&connection->stream, http_stream_on_alloc, http_stream_on_read);
 }
 
+/**
+ * Callback for handling the allocation of memory for a buffer
+ *
+ * @param client A pointer to a client handle
+ * @param suggested_size The suggested size of allocation
+ * @param buf A pointer to a libuv buffer
+ */
 void http_stream_on_alloc(uv_handle_t* client, size_t suggested_size, uv_buf_t* buf)
 {
     buf->base = malloc(suggested_size);
     buf->len = suggested_size;
 }
 
+/**
+ * A callback for handling the closing a stream
+ *
+ * This function frees the connection via free_http_connection
+ *
+ * @handle The handle to the stream
+*/
 void http_stream_on_close(uv_handle_t* handle)
 {
     http_connection* connection = (http_connection*)handle->data;
     free_http_connection(connection);
 }
 
+/**
+ * Callback for handling read operations on a stream
+ *
+ * @param tcp Pointer to the stream handle
+ * @param nread >0 there is data; 0 done reading; <0 an error occured
+ * @param buf The buffer data type
+ */
 void http_stream_on_read(uv_stream_t* tcp, ssize_t nread, const uv_buf_t* buf)
 {
     size_t parsed;
@@ -253,6 +340,15 @@ void http_stream_on_read(uv_stream_t* tcp, ssize_t nread, const uv_buf_t* buf)
     free(buf->base);
 }
 
+/**
+ * Write a single response buffer to a stream
+ *
+ * @todo Use return values from ub_write
+ *
+ * @param write_context A pointer to the hw_write_context to write to
+ * @param response A pointer to the hw_string response buffer to write to the stream
+ *
+ */
 int http_server_write_response(hw_write_context* write_context, hw_string* response)
 {
     uv_write_t* write_req = (uv_write_t *)malloc(sizeof(*write_req) + sizeof(uv_buf_t));
@@ -268,6 +364,12 @@ int http_server_write_response(hw_write_context* write_context, hw_string* respo
     return 0;
 }
 
+/**
+ * Callback for after data has been written to a stream
+ *
+ * @param req A pointer to write request
+ * @param status The status of the request- 0 on success; otherwise 1
+ */
 void http_server_after_write(uv_write_t* req, int status)
 {
     hw_write_context* write_context = (hw_write_context*)req->data;

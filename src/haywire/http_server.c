@@ -54,6 +54,11 @@ uv_barrier_t* listeners_created_barrier;
 http_connection* create_http_connection()
 {
     http_connection* connection = malloc(sizeof(http_connection));
+    if(connection == NULL)
+    {
+        return NULL;
+    }
+
     connection->request = NULL;
     INCREMENT_STAT(stat_connections_created_total);
     return connection;

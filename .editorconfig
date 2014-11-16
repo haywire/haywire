@@ -1,0 +1,17 @@
+root = true
+
+[*]
+trim_trailing_whitespace = false
+end_of_line = lf
+
+[*.sh]
+indent_style = space
+indent_size = 4
+
+[*.cpp]
+indent_style = space
+indent_size = 4
+
+[*.c]
+indent_style = space
+indent_size = 4

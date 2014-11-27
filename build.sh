@@ -39,6 +39,12 @@ if [ ! -d "lib/libuv" ]; then
     git clone https://github.com/joyent/libuv.git lib/libuv
 fi
 
+# Getting libnub
+if [ ! -d "lib/libnub" ]; then
+    echo "git clone https://github.com/nubjs/libnub.git lib/libnub"
+    git clone https://github.com/nubjs/libnub.git lib/libnub
+fi
+
 # Getting Gyp build environment.
 if [ ! -d "bin/gyp" ]; then
     echo "git clone https://chromium.googlesource.com/external/gyp.git bin/gyp"
@@ -67,5 +73,5 @@ else
     echo "----------------------------------------"
     echo "Configuring and compiling for ${OS}"
     echo "----------------------------------------"
-    $GYP --depth=. -Goutput_dir=./builds/unix -Icommon.gypi -Dlibrary=static_library -Duv_library=static_library -Dtarget_arch=x64 --build=$CONFIGURATION -f make haywire.gyp
+    $GYP --depth=. -Goutput_dir=./builds/unix -Icommon.gypi -Dlibrary=static_library -Duv_library=static_library -Dtarget_arch=x86 --build=$CONFIGURATION -f xcode haywire.gyp
 fi

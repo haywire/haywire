@@ -2,6 +2,7 @@
 #include "uv.h"
 #include "http_parser.h"
 #include "http_request.h"
+#include "nub.h"
 
 typedef struct
 {
@@ -15,4 +16,5 @@ typedef struct
     int current_header_value_length;
     int keep_alive;
     int last_was_value;
+    nub_thread_t* thread;
 } http_connection;

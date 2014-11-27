@@ -1,5 +1,6 @@
 #pragma once
 #include "uv.h"
+#include "nub.h"
 #include "haywire.h"
 #include "http_connection.h"
 #include "http_parser.h"
@@ -23,8 +24,16 @@ union stream_handle
     uv_tcp_t tcp;
 };
 
+typedef struct {
+    size_t len;
+    char* base;
+    ssize_t nread;
+    uv_stream_t* handle;
+} on_read_t;
+
+
 extern void* routes;
-extern uv_loop_t* uv_loop;
+extern nub_loop_t* uv_loop;
 extern hw_string* http_v1_0;
 extern hw_string* http_v1_1;
 extern hw_string* server_name;
@@ -40,3 +49,4 @@ void http_stream_on_close(uv_handle_t* handle);
 int http_server_write_response(hw_write_context* write_context, hw_string* response);
 void http_server_after_write(uv_write_t* req, int status);
 void http_stream_on_read(uv_stream_t* tcp, ssize_t nread, const uv_buf_t* buf);
+static void thread_after_read(nub_thread_t* thread, void* arg);

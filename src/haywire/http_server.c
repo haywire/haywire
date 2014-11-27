@@ -12,6 +12,7 @@
 #include <string.h>
 #include <assert.h>
 #include "uv.h"
+#include "nub.h"
 #include "haywire.h"
 #include "hw_string.h"
 #include "khash.h"
@@ -41,7 +42,7 @@ static uv_tcp_t server;
 static http_parser_settings parser_settings;
 static struct sockaddr_in listen_address;
 
-uv_loop_t* uv_loop;
+nub_loop_t* uv_loop;
 void* routes;
 hw_string* http_v1_0;
 hw_string* http_v1_1;
@@ -50,6 +51,17 @@ int listener_count;
 uv_async_t* listener_async_handles;
 uv_loop_t* listener_event_loops;
 uv_barrier_t* listeners_created_barrier;
+
+/* Quick way to check the return value */
+static void check_error(int r, const char* msg) {
+    if (r) {
+        if (0 > r)
+            fprintf(stderr, "%s: %s\n", msg, uv_strerror(r));
+        else
+            fprintf(stderr, "%s: %i\n", msg, r);
+        abort();
+    }
+}
 
 http_connection* create_http_connection()
 {
@@ -150,8 +162,9 @@ int hw_http_open(int threads)
     listener_count = threads;
     
     /* TODO: Use the return values from uv_tcp_init() and uv_tcp_bind() */
-    uv_loop = uv_default_loop();
-    uv_tcp_init(uv_loop, &server);
+    uv_loop = malloc(sizeof(nub_loop_t));
+    nub_loop_init(uv_loop);
+    uv_tcp_init(&uv_loop->uvloop, &server);
     
     listener_async_handles = calloc(listener_count, sizeof(uv_async_t));
     listener_event_loops = calloc(listener_count, sizeof(uv_loop_t));
@@ -160,44 +173,18 @@ int hw_http_open(int threads)
     uv_barrier_init(listeners_created_barrier, listener_count + 1);
     
     service_handle = malloc(sizeof(uv_async_t));
-    uv_async_init(uv_loop, service_handle, NULL);
+    uv_async_init(&uv_loop->uvloop, service_handle, NULL);
     
-    if (listener_count == 0)
-    {
-        /* If running single threaded there is no need to use the IPC pipe
-         to distribute requests between threads so lets avoid the IPC overhead */
+    /* If running single threaded there is no need to use the IPC pipe
+       to distribute requests between threads so lets avoid the IPC overhead */
         
-        initialize_http_request_cache();
+    initialize_http_request_cache();
         
-        uv_ip4_addr(config->http_listen_address, config->http_listen_port, &listen_address);
-        uv_tcp_bind(&server, (const struct sockaddr*)&listen_address, 0);
-        uv_listen((uv_stream_t*)&server, 128, http_stream_on_connect);
-        printf("Listening on %s:%d\n", config->http_listen_address, config->http_listen_port);
-        uv_run(uv_loop, UV_RUN_DEFAULT);
-    }
-    else
-    {
-        int i = 0;
-
-        /* If we are running multi-threaded spin up the dispatcher that uses
-         an IPC pipe to send socket connection requests to listening threads */
-        struct server_ctx* servers;
-        servers = calloc(threads, sizeof(servers[0]));
-        for (i = 0; i < threads; i++)
-        {
-            int rc = 0;
-            struct server_ctx* ctx = servers + i;
-            ctx->index = i;
-            
-            rc = uv_sem_init(&ctx->semaphore, 0);
-            rc = uv_thread_create(&ctx->thread_id, connection_consumer_start, ctx);
-        }
-        
-        uv_barrier_wait(listeners_created_barrier);
-        initialize_http_request_cache();
-        
-        start_connection_dispatching(UV_TCP, threads, servers, config->http_listen_address, config->http_listen_port);
-    }
+    uv_ip4_addr(config->http_listen_address, config->http_listen_port, &listen_address);
+    uv_tcp_bind(&server, (const struct sockaddr*)&listen_address, 0);
+    uv_listen((uv_stream_t*)&server, 128, http_stream_on_connect);
+    printf("Listening on %s:%d\n", config->http_listen_address, config->http_listen_port);
+    nub_loop_run(uv_loop, UV_RUN_DEFAULT);
     
     return 0;
 }
@@ -205,11 +192,15 @@ int hw_http_open(int threads)
 void http_stream_on_connect(uv_stream_t* stream, int status)
 {
     http_connection* connection = create_http_connection();
-    uv_tcp_init(uv_loop, &connection->stream);
+    uv_tcp_init(&uv_loop->uvloop, &connection->stream);
     http_parser_init(&connection->parser, HTTP_REQUEST);
     
     connection->parser.data = connection;
     connection->stream.data = connection;
+    
+    nub_thread_t thread;
+    nub_thread_create(uv_loop, &thread);
+    connection->thread = &thread;
     
     /* TODO: Use the return values from uv_accept() and uv_read_start() */
     uv_accept(stream, (uv_stream_t*)&connection->stream);
@@ -230,22 +221,52 @@ void http_stream_on_close(uv_handle_t* handle)
 
 void http_stream_on_read(uv_stream_t* tcp, ssize_t nread, const uv_buf_t* buf)
 {
+    http_connection* connection = (http_connection*)tcp->data;
+    on_read_t* nubuf = (on_read_t*) malloc(sizeof(*nubuf));
+    check_error(NULL == nubuf, "allocation error");
+    
+    nubuf->len = buf->len;
+    nubuf->base = buf->base;
+    nubuf->nread = nread;
+    nubuf->handle = tcp;
+    
+    nub_thread_push(connection->thread, thread_after_read, nubuf);
+}
+
+static void thread_after_read(nub_thread_t* thread, void* arg)
+{
+    nub_loop_t* loop;
+    on_read_t* nubuf;
+    uv_stream_t* tcp;
+    ssize_t nread;
+    size_t len;
+    int r;
+    
+    // Unravelling all the different data types
+    loop = thread->nubloop;
+    nubuf = (on_read_t*)arg;
+    tcp = nubuf->handle;
+    nread = nubuf->nread;
+    len = nubuf->len;
+    
     size_t parsed;
     http_connection* connection = (http_connection*)tcp->data;
     
     if (nread >= 0)
     {
-        parsed = http_parser_execute(&connection->parser, &parser_settings, buf->base, nread);
+        parsed = http_parser_execute(&connection->parser, &parser_settings, nubuf->base, nread);
         if (parsed < nread)
         {
-            /* uv_close((uv_handle_t*) &client->handle, http_stream_on_close); */
+            //uv_close((uv_handle_t*) &client->handle, http_stream_on_close);
         }
     }
     else
     {
         uv_close((uv_handle_t*) &connection->stream, http_stream_on_close);
     }
-    free(buf->base);
+
+    free(nubuf->base);
+    free(nubuf);
 }
 
 int http_server_write_response(hw_write_context* write_context, hw_string* response)
@@ -258,8 +279,13 @@ int http_server_write_response(hw_write_context* write_context, hw_string* respo
     
     write_req->data = write_context;
     
+    /* Event loop critical section to write data */
+    nub_loop_block(write_context->connection->thread);
     /* TODO: Use the return values from uv_write() */
-    uv_write(write_req, (uv_stream_t*)&write_context->connection->stream, resbuf, 1, http_server_after_write);
+    int r = uv_write(write_req, (uv_stream_t*)&write_context->connection->stream, resbuf, 1, http_server_after_write);
+    
+    check_error(r, "write error");
+    nub_loop_resume(write_context->connection->thread);
     return 0;
 }
 

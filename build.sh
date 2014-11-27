@@ -73,5 +73,5 @@ else
     echo "----------------------------------------"
     echo "Configuring and compiling for ${OS}"
     echo "----------------------------------------"
-    $GYP --depth=. -Goutput_dir=./builds/unix -Icommon.gypi -Dlibrary=static_library -Duv_library=static_library -Dtarget_arch=x86 --build=$CONFIGURATION -f xcode haywire.gyp
+    $GYP --depth=. -Goutput_dir=./builds/unix -Icommon.gypi -Dlibrary=static_library -Duv_library=static_library -Dtarget_arch=x86 --build=$CONFIGURATION -f make haywire.gyp
 fi

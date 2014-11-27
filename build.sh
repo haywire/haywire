@@ -35,8 +35,8 @@ fi
 
 # Getting libuv
 if [ ! -d "lib/libuv" ]; then
-    echo "git clone https://github.com/joyent/libuv.git lib/libuv"
-    git clone https://github.com/joyent/libuv.git lib/libuv
+    echo "git clone https://github.com/libuv/libuv.git lib/libuv"
+    git clone https://github.com/libuv/libuv.git lib/libuv
 fi
 
 # Getting libnub
@@ -45,7 +45,9 @@ if [ ! -d "lib/libnub" ]; then
     git clone https://github.com/nubjs/libnub.git lib/libnub
     cd lib/libnub
     ./build.sh
-    cd ../..
+    cd out/
+    make
+    cd ../../..
 fi
 
 # Getting Gyp build environment.

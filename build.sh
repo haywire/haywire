@@ -43,6 +43,9 @@ fi
 if [ ! -d "lib/libnub" ]; then
     echo "git clone https://github.com/nubjs/libnub.git lib/libnub"
     git clone https://github.com/nubjs/libnub.git lib/libnub
+    cd lib/libnub
+    ./build.sh
+    cd ../..
 fi
 
 # Getting Gyp build environment.

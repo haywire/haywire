@@ -14,6 +14,10 @@
           './lib/libuv/uv.gyp:libuv',
         ],
 
+        'libraries': [ 
+          './lib/jemalloc/lib/libjemalloc.a' 
+        ],
+
         'conditions': [
           ['OS=="linux"', {
             'defines': [
@@ -38,6 +42,7 @@
         'include_dirs': [
           './include',
           './lib/libuv/include',
+          './lib/jemalloc/include',
         ],
 
         'sources': [
@@ -85,6 +90,10 @@
           './lib/libuv/uv.gyp:libuv',
         ],
 
+        'libraries': [ 
+          './lib/jemalloc/lib/libjemalloc.a' 
+        ],
+
         'conditions': [
           ['OS=="linux"', {
             'defines': [
@@ -110,6 +119,7 @@
         'include_dirs': [
           './include',
           './lib/libuv/include',
+          './lib/jemalloc/include',
         ],
 
       'sources': [

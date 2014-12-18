@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "server_stats.h"
 #include "haywire.h"
+#include <jemalloc/jemalloc.h>
 
 int stat_connections_created_total;
 int stat_connections_destroyed_total;
@@ -53,6 +54,9 @@ void get_server_stats(http_request* request, hw_http_response* response, void* u
     
     hw_http_response_send(response, NULL, NULL);
     
+    // Dump allocator statistics to stderr.
+    malloc_stats_print(NULL, NULL, NULL);
+
     printf("connections_created_total: %d\nconnections_destroyed_total: %d\nrequests_created_total: %d\nrequests_destroyed_total: %d\n\n",
         stat_connections_created_total,
         stat_connections_destroyed_total,

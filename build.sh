@@ -39,6 +39,17 @@ if [ ! -d "lib/libuv" ]; then
     git clone https://github.com/joyent/libuv.git lib/libuv
 fi
 
+# Get and compile jemalloc
+if [ ! -d "lib/jemalloc" ]; then
+    echo "git clone https://github.com/jemalloc/jemalloc.git lib/jemalloc"
+    git clone https://github.com/jemalloc/jemalloc.git lib/jemalloc
+    cd lib/jemalloc
+    ./autogen.sh
+    ./configure --with-jemalloc-prefix=""
+    make
+    cd ../..
+fi
+
 # Getting Gyp build environment.
 if [ ! -d "bin/gyp" ]; then
     echo "git clone https://chromium.googlesource.com/external/gyp.git bin/gyp"
@@ -67,5 +78,5 @@ else
     echo "----------------------------------------"
     echo "Configuring and compiling for ${OS}"
     echo "----------------------------------------"
-    $GYP --depth=. -Goutput_dir=./builds/unix -Icommon.gypi -Dlibrary=static_library -Duv_library=static_library -Dtarget_arch=x64 --build=$CONFIGURATION -f make haywire.gyp
+    $GYP --depth=. -Goutput_dir=./builds/unix -Icommon.gypi -Dlibrary=static_library -Duv_library=static_library -Dtarget_arch=x64 --build=$CONFIGURATION -f xcode haywire.gyp
 fi

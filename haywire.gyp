@@ -175,5 +175,28 @@
 
       }, # hello_world sample
 
+      ########################################
+      # techempower_benchmark sample
+      ########################################
+      {
+        'target_name': 'techempower_benchmark',
+        'product_name': 'techempower_benchmark',
+        'type': 'executable',
+        'msvs_guid': '5ECEC9E5-8F23-47B6-93E0-C3B328B3BE61',
+
+        'dependencies': [
+          'haywire',
+        ],
+        
+        'include_dirs': [
+          './include',
+        ],
+
+        'sources': [
+          'src/samples/techempower_benchmark/program.c',
+        ],
+
+      }, # techempower_benchmark sample
+
     ],
   }

@@ -16,7 +16,7 @@ static uv_key_t thread_cache_key;
 
 void initialize_http_request_cache();
 void free_http_request_cache();
-void http_request_cache_timer(uv_timer_t* handle, int status);
+void http_request_cache_timer(uv_timer_t* handle);
 void create_cached_http_request(khash_t(string_hashmap)* http_request_cache, char* http_status);
 void set_cached_request(khash_t(string_hashmap)* http_request_cache, char* http_status, hw_string* cache_entry);
 hw_string* get_cached_request(char* http_status);
@@ -31,10 +31,14 @@ void http_request_cache_configure_listener(uv_loop_t* loop, uv_async_t* handle)
     uv_timer_t* cache_invalidation_timer = malloc(sizeof(uv_timer_t));
     uv_timer_init(loop, cache_invalidation_timer);
     uv_timer_start(cache_invalidation_timer, http_request_cache_timer, 500, 500);
-    uv_unref((uv_handle_t*) cache_invalidation_timer);
+    
+    if (handle != NULL)
+    {
+        uv_unref((uv_handle_t*) cache_invalidation_timer);
+    }
 }
 
-void http_request_cache_timer(uv_timer_t* handle, int status)
+void http_request_cache_timer(uv_timer_t* timer)
 {
     khash_t(string_hashmap)* http_request_cache = uv_key_get(&thread_cache_key);
     if (http_request_cache != NULL)
@@ -70,8 +74,16 @@ void create_cached_http_request(khash_t(string_hashmap)* http_request_cache, cha
     APPENDSTRING(cache_entry, CRLF);
     append_string(cache_entry, server_name);
     APPENDSTRING(cache_entry, CRLF);
-    APPENDSTRING(cache_entry, "Date: Fri, 31 Aug 2011 00:31:53 GMT");
-    APPENDSTRING(cache_entry, CRLF);
+
+    // Add the current time.
+    time_t curtime;
+    time(&curtime);
+    char* current_time = ctime(&curtime);
+    hw_string current_datetime;
+    current_datetime.value = current_time;
+    current_datetime.length = strlen(current_time);
+    APPENDSTRING(cache_entry, "Date: ");
+    append_string(cache_entry, &current_datetime);
     
     set_cached_request(http_request_cache, http_status, cache_entry);
 }

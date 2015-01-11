@@ -168,6 +168,7 @@ int hw_http_open(int threads)
          to distribute requests between threads so lets avoid the IPC overhead */
         
         initialize_http_request_cache();
+        http_request_cache_configure_listener(uv_loop, NULL);
         
         uv_ip4_addr(config->http_listen_address, config->http_listen_port, &listen_address);
         uv_tcp_bind(&server, (const struct sockaddr*)&listen_address, 0);
@@ -280,5 +281,5 @@ void http_server_after_write(uv_write_t* req, int status)
     
     free(write_context);
     free(resbuf->base);
-    free(req);
+    free(req);    
 }

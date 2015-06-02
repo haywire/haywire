@@ -251,16 +251,25 @@ void http_stream_on_read(uv_stream_t* tcp, ssize_t nread, const uv_buf_t* buf)
 
 int http_server_write_response(hw_write_context* write_context, hw_string* response)
 {
-    uv_write_t* write_req = (uv_write_t *)malloc(sizeof(*write_req) + sizeof(uv_buf_t));
-    uv_buf_t* resbuf = (uv_buf_t *)(write_req+1);
+    uv_buf_t* resbuf = malloc(sizeof(uv_buf_t));
     
     resbuf->base = response->value;
     resbuf->len = response->length + 1;
     
-    write_req->data = write_context;
+    write_context->connection->buffers[write_context->connection->buffers_count] = resbuf;
+    write_context->connection->buffers_count++;
+    printf("%d\n", write_context->connection->buffers_count); // ONLY HAPPENS ONCE, WHY?
     
-    /* TODO: Use the return values from uv_write() */
-    uv_write(write_req, (uv_stream_t*)&write_context->connection->stream, resbuf, 1, http_server_after_write);
+    if (write_context->connection->buffers_count == 32)
+    {
+        int err = uv_try_write((uv_stream_t*)&write_context->connection->stream, *write_context->connection->buffers, 32);
+    
+        if (err == UV_ENOSYS || err == UV_EAGAIN)
+            return 0;
+        if (err < 0)
+            return err;
+    }
+    
     return 0;
 }
 

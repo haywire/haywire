@@ -262,7 +262,8 @@ int http_server_write_response(hw_write_context* write_context, hw_string* respo
     
     if (write_context->connection->buffers_count == 32)
     {
-        int err = uv_try_write((uv_stream_t*)&write_context->connection->stream, *write_context->connection->buffers, 32);
+        int err = uv_try_write((uv_stream_t*)&write_context->connection->stream, 
+            *write_context->connection->buffers, 32);
     
         if (err == UV_ENOSYS || err == UV_EAGAIN)
             return 0;

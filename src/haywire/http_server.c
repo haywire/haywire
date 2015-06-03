@@ -114,11 +114,22 @@ int hw_init_with_config(configuration* c)
     config = malloc(sizeof(configuration));
     config->http_listen_address = dupstr(c->http_listen_address);
     config->http_listen_port = c->http_listen_port;
+    config->thread_count = c->thread_count;
+    config->response_batch_size = c->response_batch_size;    
     
     http_v1_0 = create_string("HTTP/1.0 ");
     http_v1_1 = create_string("HTTP/1.1 ");
     server_name = create_string("Server: Haywire/master");
     return 0;
+}
+
+void print_configuration()
+{
+    printf("Address: %s\nPort: %d\nThreads: %d\nResponse batch: %d\n",
+           config->http_listen_address,
+           config->http_listen_port,
+           config->thread_count,
+           config->response_batch_size);
 }
 
 void free_http_server()
@@ -131,8 +142,9 @@ void free_http_server()
     kh_destroy(string_hashmap, routes);
 }
 
-int hw_http_open(int threads)
+int hw_http_open()
 {
+    int threads = config->thread_count;
     uv_async_t* service_handle = 0;
 
     parser_settings.on_header_field = http_request_on_header_field;
@@ -173,7 +185,8 @@ int hw_http_open(int threads)
         uv_ip4_addr(config->http_listen_address, config->http_listen_port, &listen_address);
         uv_tcp_bind(&server, (const struct sockaddr*)&listen_address, 0);
         uv_listen((uv_stream_t*)&server, 128, http_stream_on_connect);
-        printf("Listening on %s:%d\n", config->http_listen_address, config->http_listen_port);
+        print_configuration();
+        printf("Listening...\n");
         uv_run(uv_loop, UV_RUN_DEFAULT);
     }
     else
@@ -259,7 +272,7 @@ int http_server_write_response(hw_write_context* write_context, hw_string* respo
     write_context->connection->buffers[write_context->connection->buffers_count] = resbuf;
     write_context->connection->buffers_count++;
     
-    if (write_context->connection->buffers_count == 32)
+    if (write_context->connection->buffers_count == config->response_batch_size)
     {
         int err = uv_try_write((uv_stream_t*)&write_context->connection->stream,
                                write_context->connection->buffers,

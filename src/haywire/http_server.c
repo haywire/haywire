@@ -256,14 +256,13 @@ int http_server_write_response(hw_write_context* write_context, hw_string* respo
     resbuf->base = response->value;
     resbuf->len = response->length + 1;
     
-    write_context->connection->buffers[write_context->connection->buffers_count] = resbuf;
+    write_context->connection->buffers[write_context->connection->buffers_count] = *resbuf;
     write_context->connection->buffers_count++;
-    printf("%d\n", write_context->connection->buffers_count); // ONLY HAPPENS ONCE, WHY?
     
-    if (write_context->connection->buffers_count == 32)
+    if (write_context->connection->buffers_count == 16)
     {
-        int err = uv_try_write((uv_stream_t*)&write_context->connection->stream, 
-            *write_context->connection->buffers, 32);
+        int err = uv_try_write((uv_stream_t*)&write_context->connection->stream, write_context->connection->buffers, 16);
+        write_context->connection->buffers_count = 0;
     
         if (err == UV_ENOSYS || err == UV_EAGAIN)
             return 0;

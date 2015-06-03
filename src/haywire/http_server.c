@@ -211,7 +211,6 @@ void http_stream_on_connect(uv_stream_t* stream, int status)
     
     connection->parser.data = connection;
     connection->stream.data = connection;
-    //connection->buffers_count = (int*)malloc(10 * sizeof(int));
     connection->buffers_count = 0;
     
     /* TODO: Use the return values from uv_accept() and uv_read_start() */

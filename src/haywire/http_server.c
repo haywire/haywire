@@ -211,6 +211,8 @@ void http_stream_on_connect(uv_stream_t* stream, int status)
     
     connection->parser.data = connection;
     connection->stream.data = connection;
+    //connection->buffers_count = (int*)malloc(10 * sizeof(int));
+    connection->buffers_count = 0;
     
     /* TODO: Use the return values from uv_accept() and uv_read_start() */
     uv_accept(stream, (uv_stream_t*)&connection->stream);
@@ -258,10 +260,18 @@ int http_server_write_response(hw_write_context* write_context, hw_string* respo
     write_context->connection->buffers[write_context->connection->buffers_count] = resbuf;
     write_context->connection->buffers_count++;
     
-    if (write_context->connection->buffers_count == 16)
+    if (write_context->connection->buffers_count == 32)
     {
-        int err = uv_try_write((uv_stream_t*)&write_context->connection->stream, write_context->connection->buffers, 16);
+        int err = uv_try_write((uv_stream_t*)&write_context->connection->stream,
+                               write_context->connection->buffers,
+                               write_context->connection->buffers_count);
+        
+        for (int i=0; i<write_context->connection->buffers_count; i++)
+        {
+            free(write_context->connection->buffers[i].base);
+        }
         write_context->connection->buffers_count = 0;
+        free(write_context);
     
         if (err == UV_ENOSYS || err == UV_EAGAIN)
             return 0;

@@ -48,7 +48,7 @@ int main(int args, char** argsv)
 {
     char route[] = "/";
     configuration config;
-    config.http_listen_address = "0.0.0.0";
+
     if (args > 1)
     {
         config.http_listen_port = atoi(argsv[1]);
@@ -57,10 +57,29 @@ int main(int args, char** argsv)
     {
         config.http_listen_port = 8000;
     }
+    
+    if (args > 2)
+    {
+        config.thread_count = atoi(argsv[2]);
+    }
+    else
+    {
+        config.thread_count = 0;
+    }
+
+    if (args > 3)
+    {
+        config.response_batch_size = atoi(argsv[3]);
+    }
+    else
+    {
+        config.response_batch_size = 1;
+    }
 
     /* hw_init_from_config("hello_world.conf"); */
+    config.http_listen_address = "0.0.0.0";
     hw_init_with_config(&config);
     hw_http_add_route(route, get_root, NULL);
-    hw_http_open(0);
+    hw_http_open();
     return 0;
 }

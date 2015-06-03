@@ -265,6 +265,7 @@ void http_stream_on_read(uv_stream_t* tcp, ssize_t nread, const uv_buf_t* buf)
 
 int http_server_write_response(hw_write_context* write_context, hw_string* response)
 {
+    int rc = 0;
     uv_buf_t resbuf;
     resbuf.base = response->value;
     resbuf.len = response->length + 1;
@@ -283,15 +284,15 @@ int http_server_write_response(hw_write_context* write_context, hw_string* respo
             free(write_context->connection->buffers[i].base);
         }
         write_context->connection->buffers_count = 0;
-        free(write_context);
-    
+
         if (err == UV_ENOSYS || err == UV_EAGAIN)
-            return 0;
+            rc = 0;
         if (err < 0)
-            return err;
+            rc = err;
     }
     
-    return 0;
+    free(write_context);
+    return rc;
 }
 
 void http_server_after_write(uv_write_t* req, int status)

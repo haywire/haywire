@@ -15,6 +15,6 @@ typedef struct
     int current_header_value_length;
     int keep_alive;
     int last_was_value;
-    uv_buf_t buffers[32];
+    uv_buf_t buffers[64];
     int buffers_count;    
 } http_connection;

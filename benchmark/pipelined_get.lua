@@ -1,7 +1,6 @@
 arguments = {}
 
 init = function(args)
-    wrk.init(args)
     arguments = args
 end
 

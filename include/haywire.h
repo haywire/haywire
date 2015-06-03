@@ -145,6 +145,8 @@ typedef struct
 {
     char* http_listen_address;
     int http_listen_port;
+    int thread_count;
+    int response_batch_size;
 } configuration;
 
 typedef struct
@@ -166,7 +168,7 @@ typedef void (HAYWIRE_CALLING_CONVENTION *http_response_complete_callback)(void*
 
 HAYWIRE_EXTERN int hw_init_from_config(char* configuration_filename);
 HAYWIRE_EXTERN int hw_init_with_config(configuration* config);
-HAYWIRE_EXTERN int hw_http_open(int threads);
+HAYWIRE_EXTERN int hw_http_open();
 HAYWIRE_EXTERN void hw_http_add_route(char* route, http_request_callback callback, void* user_data);
 HAYWIRE_EXTERN char* hw_get_header(http_request* request, char* key);
 

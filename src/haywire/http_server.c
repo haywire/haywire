@@ -251,12 +251,11 @@ void http_stream_on_read(uv_stream_t* tcp, ssize_t nread, const uv_buf_t* buf)
 
 int http_server_write_response(hw_write_context* write_context, hw_string* response)
 {
-    uv_buf_t* resbuf = malloc(sizeof(uv_buf_t));
+    uv_buf_t resbuf;
+    resbuf.base = response->value;
+    resbuf.len = response->length + 1;
     
-    resbuf->base = response->value;
-    resbuf->len = response->length + 1;
-    
-    write_context->connection->buffers[write_context->connection->buffers_count] = *resbuf;
+    write_context->connection->buffers[write_context->connection->buffers_count] = resbuf;
     write_context->connection->buffers_count++;
     
     if (write_context->connection->buffers_count == 16)

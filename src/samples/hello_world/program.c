@@ -58,9 +58,17 @@ int main(int args, char** argsv)
         config.http_listen_port = 8000;
     }
 
+    if (args > 2)
+    {
+        config.thread_count = atoi(argsv[2]);
+    }
+    else
+    {
+        config.thread_count = 0;
+    }
     /* hw_init_from_config("hello_world.conf"); */
     hw_init_with_config(&config);
     hw_http_add_route(route, get_root, NULL);
-    hw_http_open(0);
+    hw_http_open();
     return 0;
 }

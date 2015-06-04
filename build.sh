@@ -33,6 +33,11 @@ if [ ! -d "bin/wrk" ]; then
     git clone https://github.com/wg/wrk.git bin/wrk
 fi
 
+# Getting Wrk2
+if [ ! -d "bin/wrk2" ]; then
+    echo "git clone https://github.com/giltene/wrk2.git bin/wrk2"
+    git clone https://github.com/giltene/wrk2.git bin/wrk2
+fi
 # Getting libuv
 if [ ! -d "lib/libuv" ]; then
     echo "git clone https://github.com/libuv/libuv.git lib/libuv"
@@ -64,6 +69,14 @@ else
     make
     cd ../../
 
+    # Compiling wrk2
+    echo "----------------------------------------"
+    echo "Compiling wrk2"
+    echo "----------------------------------------"
+    cd bin/wrk2
+    make
+    cd ../../
+    
     echo "----------------------------------------"
     echo "Configuring and compiling for ${OS}"
     echo "----------------------------------------"

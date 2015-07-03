@@ -1,4 +1,5 @@
 #pragma once
+#include <uuid/uuid.h>
 #include "uv.h"
 #include "http_parser.h"
 #include "http_request.h"
@@ -17,4 +18,5 @@ typedef struct
     int last_was_value;
     uv_buf_t buffers[1024];
     int buffers_count;
+    uuid_t* connection_id;
 } http_connection;

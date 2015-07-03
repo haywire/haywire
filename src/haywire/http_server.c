@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <uuid/uuid.h>
 #include "uv.h"
 #include "haywire.h"
 #include "hw_string.h"
@@ -222,6 +223,10 @@ void http_stream_on_connect(uv_stream_t* stream, int status)
     uv_tcp_init(uv_loop, &connection->stream);
     http_parser_init(&connection->parser, HTTP_REQUEST);
     
+    uuid_t uuid;
+    uuid_generate(uuid);
+
+    connection->connection_id = &uuid;
     connection->parser.data = connection;
     connection->stream.data = connection;
     connection->buffers_count = 0;

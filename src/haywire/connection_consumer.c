@@ -59,6 +59,10 @@ void connection_consumer_new_connection(uv_stream_t* server_handle, int status)
     http_connection* connection = create_http_connection();
     http_parser_init(&connection->parser, HTTP_REQUEST);
     
+    uuid_t uuid;
+    uuid_generate(uuid);
+
+    connection->connection_id = &uuid;
     connection->parser.data = connection;
     connection->stream.data = connection;
     connection->buffers_count = 0;

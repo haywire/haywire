@@ -5,6 +5,7 @@ extern "C" {
 #endif
 
 #include <stdio.h>
+#include <uuid/uuid.h>
 
 #ifdef _WIN32
     /* Windows - set up dll import/export decorators. */
@@ -159,6 +160,7 @@ typedef struct
     void* headers;
     hw_string* body;
     int body_length;
+    uuid_t* connection_id;
 } http_request;
 
 typedef	void* hw_http_response;

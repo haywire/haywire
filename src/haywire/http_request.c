@@ -61,6 +61,7 @@ void* get_header(http_request* request, char* name)
 http_request* create_http_request(http_connection* connection)
 {
     http_request* request = malloc(sizeof(http_request));
+    request->connection_id = connection->connection_id;
     request->url = NULL;
     request->headers = kh_init(string_hashmap);
     request->body_length = 0;

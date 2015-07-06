@@ -16,8 +16,7 @@
 
         "link_settings": {
           "libraries": [
-            "-luuid",
-            "-lm"
+            "-luuid"
           ]
         },
         

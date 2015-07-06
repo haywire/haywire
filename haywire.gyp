@@ -14,6 +14,13 @@
           './lib/libuv/uv.gyp:libuv',
         ],
 
+        "link_settings": {
+          "libraries": [
+            "-luuid",
+            "-lm"
+          ]
+        },
+        
         'conditions': [
           ['OS=="linux"', {
             'defines': [

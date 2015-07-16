@@ -43,7 +43,6 @@ static struct sockaddr_in listen_address;
 
 uv_loop_t* uv_loop;
 void* routes;
-hw_string* http_v1_0;
 hw_string* http_v1_1;
 hw_string* server_name;
 int listener_count;
@@ -68,6 +67,11 @@ void free_http_connection(http_connection* connection)
     
     free(connection);
     INCREMENT_STAT(stat_connections_destroyed_total);
+}
+
+void hw_http_close_connection(http_connection* connection)
+{
+    uv_close((uv_handle_t*) &connection->stream, http_stream_on_close);
 }
 
 void set_route(void* hashmap, char* name, hw_route_entry* route_entry)
@@ -116,7 +120,6 @@ int hw_init_with_config(configuration* c)
     config->http_listen_port = c->http_listen_port;
     config->thread_count = c->thread_count;
     
-    http_v1_0 = create_string("HTTP/1.0 ");
     http_v1_1 = create_string("HTTP/1.1 ");
     server_name = create_string("Server: Haywire/master");
     return 0;
@@ -250,12 +253,12 @@ void http_stream_on_read(uv_stream_t* tcp, ssize_t nread, const uv_buf_t* buf)
         parsed = http_parser_execute(&connection->parser, &parser_settings, buf->base, nread);
         if (parsed < nread)
         {
-            /* uv_close((uv_handle_t*) &client->handle, http_stream_on_close); */
+            /* hw_http_close_connection(connection); */
         }
     }
     else
     {
-        uv_close((uv_handle_t*) &connection->stream, http_stream_on_close);
+        hw_http_close_connection(connection);
     }
     free(buf->base);
 }

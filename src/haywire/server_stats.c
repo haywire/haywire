@@ -25,8 +25,6 @@ void get_server_stats(http_request* request, hw_http_response* response, void* u
     hw_string content_type_name;
     hw_string content_type_value;
     hw_string body;
-    hw_string keep_alive_name;
-    hw_string keep_alive_value;
     
     SETSTRING(status_code, HTTP_STATUS_200);
     hw_set_response_status_code(response, &status_code);
@@ -38,18 +36,6 @@ void get_server_stats(http_request* request, hw_http_response* response, void* u
     
     SETSTRING(body, "stats printed");
     hw_set_body(response, &body);
-    
-    if (request->keep_alive)
-    {
-        SETSTRING(keep_alive_name, "Connection");
-        
-        SETSTRING(keep_alive_value, "Keep-Alive");
-        hw_set_response_header(response, &keep_alive_name, &keep_alive_value);
-    }
-    else
-    {
-        hw_set_http_version(response, 1, 0);
-    }
     
     hw_http_response_send(response, NULL, NULL);
     

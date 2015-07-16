@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include "uv.h"
 #include "haywire.h"
 #include "hw_string.h"
 #include "khash.h"
@@ -230,8 +231,6 @@ void get_404_response(http_request* request, http_response* response)
     hw_string content_type_name;
     hw_string content_type_value;
     hw_string body;
-    hw_string keep_alive_name;
-    hw_string keep_alive_value;
     
     SETSTRING(status_code, HTTP_STATUS_404);
     hw_set_response_status_code(response, &status_code);
@@ -243,18 +242,6 @@ void get_404_response(http_request* request, http_response* response)
     
     SETSTRING(body, "404 Not Found");
     hw_set_body(response, &body);
-    
-    if (request->keep_alive)
-    {
-        SETSTRING(keep_alive_name, "Connection");
-        
-        SETSTRING(keep_alive_value, "Keep-Alive");
-        hw_set_response_header(response, &keep_alive_name, &keep_alive_value);
-    }
-    else
-    {
-        hw_set_http_version(response, 1, 0);
-    }
 }
 
 int http_request_on_message_complete(http_parser* parser)
@@ -264,7 +251,9 @@ int http_request_on_message_complete(http_parser* parser)
     hw_string* response_buffer;
     hw_write_context* write_context;
     hw_http_response* response = hw_create_http_response(connection);
-    
+
+    hw_set_http_keep_alive(response, connection->request->keep_alive);
+
     if (route_entry != NULL)
     {
         route_entry->callback(connection->request, response, route_entry->user_data);
@@ -284,6 +273,7 @@ int http_request_on_message_complete(http_parser* parser)
     
     free_http_request(connection->request);
     connection->request = NULL;
+
     return 0;
 }
 

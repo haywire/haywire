@@ -35,6 +35,24 @@ void hw_set_http_version(hw_http_response* response, unsigned short major, unsig
     resp->http_minor = minor;
 }
 
+void hw_set_http_keep_alive(hw_http_response* response, int keep_alive)
+{
+    hw_string keep_alive_name;
+    hw_string keep_alive_value;
+
+    SETSTRING(keep_alive_name, "Connection");
+    if (keep_alive)
+    {
+        SETSTRING(keep_alive_value, "Keep-Alive");
+    }
+    else
+    {
+        SETSTRING(keep_alive_value, "close");
+    }
+
+    hw_set_response_header(response, &keep_alive_name, &keep_alive_value);
+}
+
 void hw_set_response_status_code(hw_http_response* response, hw_string* status_code)
 {
     http_response* resp = (http_response*)response;

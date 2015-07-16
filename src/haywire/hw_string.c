@@ -46,3 +46,13 @@ void string_from_int(hw_string* str, int val, int base)
     str->value = &buf[i+1];
     str->length = length;
 }
+
+int string_equals(hw_string* a, hw_string* b)
+{
+    if(a->length != b->length)
+    {
+        return 0;
+    }
+
+    return strncmp(a->value, b->value, a->length) == 0;
+}

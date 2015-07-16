@@ -41,7 +41,7 @@ void hw_set_response_status_code(hw_http_response* response, hw_string* status_c
     resp->status_code = *status_code;
 }
 
-void hw_set_response_header(hw_http_response* response, hw_string* name, hw_string* value)
+void hw_add_response_header(hw_http_response* response, hw_string* name, hw_string* value)
 {
     http_response* resp = (http_response*)response;
     http_header* header = &resp->headers[resp->number_of_headers];
@@ -49,6 +49,24 @@ void hw_set_response_header(hw_http_response* response, hw_string* name, hw_stri
     header->value = *value;
     resp->headers[resp->number_of_headers] = *header;
     resp->number_of_headers++;
+}
+
+void hw_set_response_header(hw_http_response* response, hw_string* name, hw_string* value)
+{
+    http_response* resp = (http_response*)response;
+    int i = 0;
+
+    for (; i < resp->number_of_headers; i++)
+    {
+        http_header* header = &resp->headers[i];
+        if (string_equals(&(header->name), name))
+        {
+            header->value = *value;
+            return;
+        }
+    }
+
+    hw_add_response_header(response, name, value);
 }
 
 void hw_set_body(hw_http_response* response, hw_string* body)

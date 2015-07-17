@@ -24,5 +24,13 @@
 # Build artifacts
 Default/
 Debug/
+bin/
 *.sln
 *.vcxproj
+Makefile
+haywire.Makefile
+*.mk
+gyp-mac-tool
+
+# Lazily-resolved dependencies
+lib/

@@ -25,7 +25,6 @@ union stream_handle
 
 extern void* routes;
 extern uv_loop_t* uv_loop;
-extern hw_string* http_v1_0;
 extern hw_string* http_v1_1;
 extern hw_string* server_name;
 extern int listener_count;

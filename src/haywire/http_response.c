@@ -62,7 +62,6 @@ void hw_set_response_header(hw_http_response* response, hw_string* name, hw_stri
         if (string_equals(&(header->name), name))
         {
             header->value = *value;
-            return;
         }
     }
 

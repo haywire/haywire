@@ -37,6 +37,18 @@ exit(1); \
 
 KHASH_MAP_INIT_STR(string_hashmap, hw_route_entry*)
 
+#define CRLF "\r\n"
+static const char response_200[] =
+  "HTTP/1.1 200 OK" CRLF
+  "Server: Haywire/master" CRLF
+  "Date: Fri, 26 Aug 2011 00:31:53 GMT" CRLF
+  "Connection: Keep-Alive" CRLF
+  "Content-Type: text/html" CRLF
+  "Content-Length: 14" CRLF
+  CRLF
+  "hello world" CRLF
+;
+
 static configuration* config;
 static uv_tcp_t server;
 static http_parser_settings parser_settings;
@@ -62,10 +74,12 @@ http_connection* create_http_connection()
 
 void free_http_connection(http_connection* connection)
 {
+    /*
     if (connection->request != NULL)
     {
         free_http_request(connection->request);
     }
+    */
     
     free(connection);
     INCREMENT_STAT(stat_connections_destroyed_total);
@@ -272,8 +286,8 @@ int http_server_write_response(hw_write_context* write_context, hw_string* respo
 {
     int rc = 0;
     uv_buf_t resbuf;
-    resbuf.base = response->value;
-    resbuf.len = response->length + 1;
+    resbuf.base = (char *)response_200;
+    resbuf.len = 163;
     
     write_context->connection->buffers[write_context->connection->buffers_count] = resbuf;
     write_context->connection->buffers_count++;
@@ -286,7 +300,7 @@ int http_server_write_response(hw_write_context* write_context, hw_string* respo
         
         for (int i=0; i<write_context->connection->buffers_count; i++)
         {
-            free(write_context->connection->buffers[i].base);
+            //free(write_context->connection->buffers[i].base);
         }
         write_context->connection->buffers_count = 0;
 
@@ -316,6 +330,6 @@ void http_server_after_write(uv_write_t* req, int status)
     }
     
     free(write_context);
-    free(resbuf->base);
+    //free(resbuf->base);
     free(req);    
 }

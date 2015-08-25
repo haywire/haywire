@@ -62,8 +62,8 @@ project(haywire C)
 #set(CMAKE_BUILD_TYPE RelWithDebInfo)
 set(CMAKE_BUILD_TYPE Debug)
 
-add_definitions(-mavx)
-#add_definitions(-msse4.2)
+#add_definitions(-mavx)
+add_definitions(-msse4.2)
 #add_definitions(-std=c++11)
 add_definitions(-Weffc++)
 add_definitions(-pedantic)
@@ -86,9 +86,12 @@ include_directories(${CMAKE_SOURCE_DIR}/include)
 
 find_package(Threads REQUIRED)
 
-add_library(haywire_core OBJECT ${HAYWIRE_SOURCES})
-add_library(haywire_static STATIC $<TARGET_OBJECTS:haywire_core>)
-add_library(haywire_shared SHARED $<TARGET_OBJECTS:haywire_core>)
+add_library(haywire STATIC ${HAYWIRE_SOURCES})
+
+target_link_libraries (haywire ${CMAKE_THREAD_LIBS_INIT}
+    ${CMAKE_SOURCE_DIR}/lib/libuv/.libs/libuv.a)
+
+GET_PROPERTY(haywire_location TARGET haywire PROPERTY LOCATION)
 
 # ----------------------------------------
 # Hello world sample
@@ -110,7 +113,11 @@ add_executable (hello_world
     ${HELLOWORLD_SOURCES})
 
 # Libraries to link in reverse order because that's what ld requires.
-target_link_libraries (hello_world ${CMAKE_THREAD_LIBS_INIT}
-    ${CMAKE_SOURCE_DIR}/Build/libhaywire_static.a)
-target_link_libraries(hello_world ${CMAKE_THREAD_LIBS_INIT}
-    ${CMAKE_SOURCE_DIR}/lib/libuv/.libs/libuv.a)
+target_link_libraries (hello_world
+    ${haywire_location}
+    ${CMAKE_THREAD_LIBS_INIT})
+
+target_link_libraries(hello_world
+    ${CMAKE_SOURCE_DIR}/lib/libuv/.libs/libuv.a
+    ${CMAKE_THREAD_LIBS_INIT})
+

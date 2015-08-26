@@ -1,7 +1,7 @@
 #!/bin/bash
 ./compile_dependencies.sh
 
-namestr=`uname`
+unamestr=`uname`
 
 if [[ "$unamestr" == 'Linux' ]]; then
     ./compile_make.sh

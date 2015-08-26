@@ -58,6 +58,8 @@ find_package(Threads REQUIRED)
 add_executable (hello_world
     ${HELLOWORLD_SOURCES})
 
+add_dependencies(hello_world haywire)
+
 # Libraries to link in reverse order because that's what ld requires.
 target_link_libraries (hello_world
     ${haywire_location}

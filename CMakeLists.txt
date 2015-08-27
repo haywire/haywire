@@ -17,7 +17,6 @@ add_definitions(-Wall)
 add_definitions(-Wextra)
 add_definitions(-Wcast-align)
 add_definitions(-w)
-add_definitions(-lrt)
 
 file(GLOB_RECURSE HAYWIRE_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/haywire/*.h
@@ -63,9 +62,7 @@ add_dependencies(hello_world haywire)
 # Libraries to link in reverse order because that's what ld requires.
 target_link_libraries (hello_world
     ${haywire_location}
-    ${CMAKE_THREAD_LIBS_INIT})
-
-target_link_libraries(hello_world
     ${CMAKE_SOURCE_DIR}/lib/libuv/.libs/libuv.a
+    rt
     ${CMAKE_THREAD_LIBS_INIT})
 

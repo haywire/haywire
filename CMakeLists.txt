@@ -10,7 +10,7 @@ set(CMAKE_BUILD_TYPE Debug)
 
 add_definitions(-std=gnu99)
 #add_definitions(-mavx)
-add_definitions(-msse4.2)
+add_definitions(-msse4.1)
 #add_definitions(-std=c++11)
 add_definitions(-Weffc++)
 add_definitions(-pedantic)

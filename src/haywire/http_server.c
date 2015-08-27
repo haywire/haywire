@@ -25,6 +25,7 @@
 #include "server_stats.h"
 #include "route_compare_method.h"
 #include "configuration/configuration.h"
+#include "picohttpparser.h"
 
 #define UVERR(err, msg) fprintf(stderr, "%s: %s\n", msg, uv_strerror(err))
 #define CHECK(r, msg) \
@@ -73,6 +74,10 @@ int hw_init_with_config(configuration* c)
     if (strcmp(config->parser, "http_parser") == 0)
     {
         http_stream_on_read = &http_stream_on_read_http_parser;
+    }
+    else if (strcmp(config->parser, "pico") == 0)
+    {
+        http_stream_on_read = &http_stream_on_read_pico;
     }
 
     if (config->response_batch_size > 0)
@@ -277,6 +282,61 @@ void http_stream_on_read_http_parser(uv_stream_t* tcp, ssize_t nread, const uv_b
         uv_close((uv_handle_t*) &connection->stream, http_stream_on_close);
     }
     free(buf->base);
+}
+
+void http_stream_on_read_pico(uv_stream_t* tcp, ssize_t nread, const uv_buf_t* buf)
+{
+    http_connection* connection = (http_connection*)tcp->data;
+
+    char *method, *path;
+    int parsed, minor_version;
+    struct phr_header headers[100];
+    size_t buflen = 0, prevbuflen = 0, method_len, path_len, num_headers;
+    ssize_t rret;
+
+    // TODO: nread == 0 should mean the socket closed. We should handle this properly.
+    if (nread >= 0)
+    {
+        memcpy(&connection->request_buffer[connection->request_buffer_length], buf->base, nread);
+        connection->request_buffer_length += nread;
+        int counter = 0;
+
+        while (connection->prevbuflen < connection->request_buffer_length)
+        {
+            counter++;
+
+            num_headers = sizeof(headers) / sizeof(headers[0]);
+            parsed = phr_parse_request(connection->request_buffer, connection->request_buffer_length,
+                                       &method, &method_len, &path, &path_len, &minor_version, headers,
+                                       &num_headers, connection->prevbuflen);
+
+            //printf("%d\t LENGTH: %d PARSED: %d PREVBUFLEN: %d\n", counter, connection->request_buffer_length, parsed, connection->prevbuflen);
+
+            if (parsed > 0)
+            {
+                connection->prevbuflen += parsed;
+
+                /* successfully parsed the request */
+                hw_write_context* write_context;
+                write_context = malloc(sizeof(hw_write_context));
+                write_context->connection = connection;
+                write_context->callback = 0;
+                http_server_write_response(write_context, NULL);
+            }
+            else if (parsed == -1)
+            {
+                //connection->prevbuflen = 0;
+
+
+            }
+            else if (parsed == -2)
+            {
+                break;
+            }
+        }
+    }
+    free(buf->base);
+    connection->prevbuflen = 0;
 }
 
 int http_server_write_response_single(hw_write_context* write_context, hw_string* response)

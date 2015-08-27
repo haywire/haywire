@@ -1,15 +1,4 @@
 #!/bin/bash
-# Getting libuv
-if [ ! -d "lib/libuv" ]; then
-    echo "git clone https://github.com/libuv/libuv.git lib/libuv"
-    git clone https://github.com/libuv/libuv.git lib/libuv
-    cd lib/libuv
-    sh autogen.sh
-    ./configure
-    make
-fi
-
-#!/bin/bash
 
 # Getting libuv
 if [ ! -d "lib/libuv" ]; then

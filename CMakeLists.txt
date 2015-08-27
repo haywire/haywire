@@ -5,16 +5,14 @@ include("common.cmake")
 # Haywire
 # ----------------------------------------
 project(haywire C)
-#set(CMAKE_BUILD_TYPE RelWithDebInfo)
-set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_BUILD_TYPE RelWithDebInfo)
+#set(CMAKE_BUILD_TYPE Debug)
 
 add_definitions(-std=gnu99)
 #add_definitions(-mavx)
 add_definitions(-msse4.1)
-#add_definitions(-std=c++11)
-add_definitions(-Weffc++)
 add_definitions(-pedantic)
-#add_definitions(-O3)
+add_definitions(-O3)
 add_definitions(-Wall)
 add_definitions(-Wextra)
 add_definitions(-Wcast-align)
@@ -64,9 +62,6 @@ add_dependencies(hello_world haywire)
 # Libraries to link in reverse order because that's what ld requires.
 target_link_libraries (hello_world
     ${haywire_location}
-    ${CMAKE_THREAD_LIBS_INIT})
-
-target_link_libraries(hello_world
     ${CMAKE_SOURCE_DIR}/lib/libuv/.libs/libuv.a
+    rt
     ${CMAKE_THREAD_LIBS_INIT})
-

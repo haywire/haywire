@@ -5,8 +5,8 @@ include("common.cmake")
 # Haywire
 # ----------------------------------------
 project(haywire C)
-#set(CMAKE_BUILD_TYPE RelWithDebInfo)
-set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_BUILD_TYPE RelWithDebInfo)
+#set(CMAKE_BUILD_TYPE Debug)
 
 add_definitions(-std=gnu99)
 #add_definitions(-mavx)

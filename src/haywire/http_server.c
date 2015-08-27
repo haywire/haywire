@@ -51,6 +51,51 @@ uv_async_t* listener_async_handles;
 uv_loop_t* listener_event_loops;
 uv_barrier_t* listeners_created_barrier;
 
+int hw_init_with_config(configuration* c)
+{
+    int http_listen_address_length;
+#ifdef DEBUG
+    char route[] = "/stats";
+    hw_http_add_route(route, get_server_stats, NULL);
+#endif /* DEBUG */
+    /* Copy the configuration */
+    config = malloc(sizeof(configuration));
+    config->http_listen_address = dupstr(c->http_listen_address);
+    config->http_listen_port = c->http_listen_port;
+    config->thread_count = c->thread_count;
+    config->parser = dupstr(c->parser);
+
+    http_v1_0 = create_string("HTTP/1.0 ");
+    http_v1_1 = create_string("HTTP/1.1 ");
+    server_name = create_string("Server: Haywire/master");
+
+    if (strcmp(config->parser, "http_parser") == 0)
+    {
+        http_stream_on_read = &http_stream_on_read_http_parser;
+    }
+    http_server_write_response = &http_server_write_response_single;
+    return 0;
+}
+
+int hw_init_from_config(char* configuration_filename)
+{
+    configuration* config = load_configuration(configuration_filename);
+    if (config == NULL)
+    {
+        return 1;
+    }
+    return hw_init_with_config(config);
+}
+
+void print_configuration()
+{
+    printf("Address: %s\nPort: %d\nThreads: %d\nParser: %s\n",
+           config->http_listen_address,
+           config->http_listen_port,
+           config->thread_count,
+           config->parser);
+}
+
 http_connection* create_http_connection()
 {
     http_connection* connection = malloc(sizeof(http_connection));
@@ -91,43 +136,6 @@ void hw_http_add_route(char *route, http_request_callback callback, void* user_d
     }
     set_route(routes, route, route_entry);
     printf("Added route %s\n", route); // TODO: Replace with logging instead.
-}
-
-int hw_init_from_config(char* configuration_filename)
-{
-    configuration* config = load_configuration(configuration_filename);
-    if (config == NULL)
-    {
-        return 1;
-    }
-    return hw_init_with_config(config);
-}
-
-int hw_init_with_config(configuration* c)
-{
-    int http_listen_address_length;
-#ifdef DEBUG
-    char route[] = "/stats";
-    hw_http_add_route(route, get_server_stats, NULL);
-#endif /* DEBUG */
-    /* Copy the configuration */
-    config = malloc(sizeof(configuration));
-    config->http_listen_address = dupstr(c->http_listen_address);
-    config->http_listen_port = c->http_listen_port;
-    config->thread_count = c->thread_count;
-    
-    http_v1_0 = create_string("HTTP/1.0 ");
-    http_v1_1 = create_string("HTTP/1.1 ");
-    server_name = create_string("Server: Haywire/master");
-    return 0;
-}
-
-void print_configuration()
-{
-    printf("Address: %s\nPort: %d\nThreads: %d\n",
-           config->http_listen_address,
-           config->http_listen_port,
-           config->thread_count);
 }
 
 void free_http_server()
@@ -240,7 +248,7 @@ void http_stream_on_close(uv_handle_t* handle)
     free_http_connection(connection);
 }
 
-void http_stream_on_read(uv_stream_t* tcp, ssize_t nread, const uv_buf_t* buf)
+void http_stream_on_read_http_parser(uv_stream_t* tcp, ssize_t nread, const uv_buf_t* buf)
 {
     size_t parsed;
     http_connection* connection = (http_connection*)tcp->data;
@@ -260,7 +268,7 @@ void http_stream_on_read(uv_stream_t* tcp, ssize_t nread, const uv_buf_t* buf)
     free(buf->base);
 }
 
-int http_server_write_response(hw_write_context* write_context, hw_string* response)
+int http_server_write_response_single(hw_write_context* write_context, hw_string* response)
 {
     uv_write_t* write_req = (uv_write_t *)malloc(sizeof(*write_req) + sizeof(uv_buf_t));
     uv_buf_t* resbuf = (uv_buf_t *)(write_req+1);

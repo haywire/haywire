@@ -65,6 +65,6 @@ target_link_libraries (hello_world
     ${CMAKE_SOURCE_DIR}/lib/libuv/.libs/libuv.a
     ${CMAKE_THREAD_LIBS_INIT})
 
-if (LINUX)
+if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     target_link_libraries (hello_world rt)
-endif()
+endif (${CMAKE_SYSTEM_NAME} MATCHES "Linux")

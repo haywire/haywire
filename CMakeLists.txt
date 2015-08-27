@@ -63,6 +63,8 @@ add_dependencies(hello_world haywire)
 target_link_libraries (hello_world
     ${haywire_location}
     ${CMAKE_SOURCE_DIR}/lib/libuv/.libs/libuv.a
-    rt
     ${CMAKE_THREAD_LIBS_INIT})
 
+if (LINUX)
+    target_link_libraries (hello_world rt)
+endif()

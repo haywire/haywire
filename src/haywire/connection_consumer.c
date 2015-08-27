@@ -61,7 +61,8 @@ void connection_consumer_new_connection(uv_stream_t* server_handle, int status)
     
     connection->parser.data = connection;
     connection->stream.data = connection;
-    
+    connection->response_buffers_count = 0;
+
     rc = uv_tcp_init(server_handle->loop, &connection->stream);
     rc = uv_accept(server_handle, (uv_stream_t*)&connection->stream);
     rc = uv_read_start((uv_stream_t*)&connection->stream, http_stream_on_alloc, http_stream_on_read);

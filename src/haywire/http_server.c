@@ -64,6 +64,7 @@ int hw_init_with_config(configuration* c)
     config->http_listen_port = c->http_listen_port;
     config->thread_count = c->thread_count;
     config->parser = dupstr(c->parser);
+    config->response_batch_size = c->response_batch_size;
 
     http_v1_0 = create_string("HTTP/1.0 ");
     http_v1_1 = create_string("HTTP/1.1 ");
@@ -73,7 +74,15 @@ int hw_init_with_config(configuration* c)
     {
         http_stream_on_read = &http_stream_on_read_http_parser;
     }
-    http_server_write_response = &http_server_write_response_single;
+
+    if (config->response_batch_size > 0)
+    {
+        http_server_write_response = &http_server_write_response_batched;
+    }
+    else
+    {
+        http_server_write_response = &http_server_write_response_single;
+    }
     return 0;
 }
 
@@ -89,11 +98,12 @@ int hw_init_from_config(char* configuration_filename)
 
 void print_configuration()
 {
-    printf("Address: %s\nPort: %d\nThreads: %d\nParser: %s\n",
+    printf("Address: %s\nPort: %d\nThreads: %d\nParser: %s\nResponse batch size: %d\n",
            config->http_listen_address,
            config->http_listen_port,
            config->thread_count,
-           config->parser);
+           config->parser,
+           config->response_batch_size);
 }
 
 http_connection* create_http_connection()
@@ -230,7 +240,8 @@ void http_stream_on_connect(uv_stream_t* stream, int status)
     
     connection->parser.data = connection;
     connection->stream.data = connection;
-    
+    connection->response_buffers_count = 0;
+
     /* TODO: Use the return values from uv_accept() and uv_read_start() */
     uv_accept(stream, (uv_stream_t*)&connection->stream);
     uv_read_start((uv_stream_t*)&connection->stream, http_stream_on_alloc, http_stream_on_read);
@@ -281,6 +292,38 @@ int http_server_write_response_single(hw_write_context* write_context, hw_string
     /* TODO: Use the return values from uv_write() */
     uv_write(write_req, (uv_stream_t*)&write_context->connection->stream, resbuf, 1, http_server_after_write);
     return 0;
+}
+
+int http_server_write_response_batched(hw_write_context* write_context, hw_string* response)
+{
+    int rc = 0;
+    uv_buf_t resbuf;
+    resbuf.base = response->value;
+    resbuf.len = response->length + 1;
+    
+    write_context->connection->response_buffers[write_context->connection->response_buffers_count] = resbuf;
+    write_context->connection->response_buffers_count++;
+    
+    if (write_context->connection->response_buffers_count == config->response_batch_size)
+    {
+        int err = uv_try_write((uv_stream_t*)&write_context->connection->stream,
+                               write_context->connection->response_buffers,
+                               write_context->connection->response_buffers_count);
+        
+        for (int i=0; i<write_context->connection->response_buffers_count; i++)
+        {
+            free(write_context->connection->response_buffers[i].base);
+        }
+        write_context->connection->response_buffers_count = 0;
+
+        if (err == UV_ENOSYS || err == UV_EAGAIN)
+            rc = 0;
+        if (err < 0)
+            rc = err;
+    }
+    
+    free(write_context);
+    return rc;
 }
 
 void http_server_after_write(uv_write_t* req, int status)

@@ -57,6 +57,7 @@ int main(int args, char** argsv)
     opt_flag_int(conf, &config.http_listen_port, "port", 8000, "Port to listen on.");
     opt_flag_int(conf, &config.thread_count, "threads", 0, "Number of threads to use.");
     opt_flag_string(conf, &config.parser, "parser", "http_parser", "HTTP parser to use");
+    opt_flag_int(conf, &config.response_batch_size, "batch", 0, "Size to batch before sending responses.");
     args = opt_config_parse(conf, args, argsv);
 
     //hw_init_from_config("hello_world.conf");

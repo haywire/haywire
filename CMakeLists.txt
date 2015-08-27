@@ -8,6 +8,7 @@ project(haywire C)
 #set(CMAKE_BUILD_TYPE RelWithDebInfo)
 set(CMAKE_BUILD_TYPE Debug)
 
+add_definitions(-std=gnu99)
 #add_definitions(-mavx)
 add_definitions(-msse4.2)
 #add_definitions(-std=c++11)

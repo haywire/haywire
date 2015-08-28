@@ -1,4 +1,10 @@
-language: c
 sudo: false
+addons:
+  apt:
+    packages:
+    - gcc-4.8
+    - g++-4.8
+compiler: gcc
+language: c
 script:
   - ./build.sh

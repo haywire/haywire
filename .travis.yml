@@ -14,4 +14,4 @@ install:
 compiler: gcc
 language: c
 script:
-  - ./build.sh
+  - ./make.sh

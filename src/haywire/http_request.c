@@ -5,6 +5,7 @@
 #include "haywire.h"
 #include "hw_string.h"
 #include "khash.h"
+#include "http.h"
 #include "http_request.h"
 #include "http_response.h"
 #include "http_parser.h"
@@ -84,7 +85,7 @@ void free_http_request(http_request* request)
         free((char*)v);
     });
     kh_destroy(string_hashmap, request->headers);
-    free(request->url);
+    //free(request->url);
     if (request->body->length > 0)
     {
         free(request->body->value);
@@ -260,6 +261,11 @@ void get_404_response(http_request* request, http_response* response)
 int http_request_on_message_complete(http_parser* parser)
 {
     http_connection* connection = (http_connection*)parser->data;
+    return http_request_complete_request(connection);
+}
+
+int http_request_complete_request(struct http_connection* connection)
+{
     hw_route_entry* route_entry = get_route_callback(connection->request->url);
     hw_string* response_buffer;
     hw_write_context* write_context;

@@ -288,12 +288,6 @@ void http_stream_on_read_pico(uv_stream_t* tcp, ssize_t nread, const uv_buf_t* b
 {
     http_connection* connection = (http_connection*)tcp->data;
 
-    char *method, *path;
-    int parsed, minor_version;
-    struct phr_header headers[100];
-    size_t buflen = 0, prevbuflen = 0, method_len, path_len, num_headers;
-    ssize_t rret;
-
     // TODO: nread == 0 should mean the socket closed. We should handle this properly.
     if (nread >= 0)
     {
@@ -303,9 +297,19 @@ void http_stream_on_read_pico(uv_stream_t* tcp, ssize_t nread, const uv_buf_t* b
 
         while (connection->prevbuflen < connection->request_buffer_length)
         {
+            //printf("%d\t%d\n", connection->prevbuflen, connection->request_buffer_length);
             counter++;
-
+            
+            int parsed;
+            char *method;
+            char *path;
+            int minor_version;
+            struct phr_header headers[100];
+            size_t method_len;
+            size_t path_len;
+            size_t num_headers;
             num_headers = sizeof(headers) / sizeof(headers[0]);
+            
             parsed = phr_parse_request(connection->request_buffer, connection->request_buffer_length,
                                        &method, &method_len, &path, &path_len, &minor_version, headers,
                                        &num_headers, connection->prevbuflen);
@@ -314,14 +318,29 @@ void http_stream_on_read_pico(uv_stream_t* tcp, ssize_t nread, const uv_buf_t* b
 
             if (parsed > 0)
             {
+                // Successfully parsed the request.
                 connection->prevbuflen += parsed;
-
-                /* successfully parsed the request */
-                hw_write_context* write_context;
-                write_context = malloc(sizeof(hw_write_context));
-                write_context->connection = connection;
-                write_context->callback = 0;
-                http_server_write_response(write_context, NULL);
+                            
+                connection->keep_alive = 1;
+                http_request* request = create_http_request(connection);
+                connection->request = request;
+                
+                //char *data = (char *)malloc(sizeof(char) * path_len + 1);
+                //strncpy(data, path, path_len);
+                //data[path_len] = '\0';
+                //connection->request->url = data;
+                request->url = path;
+                
+                //char *data = (char *)malloc(sizeof(char) * path_len + 1);
+                //strncpy(data, path, path_len);
+                //data[path_len] = '\0';
+                //connection->request->url = data;
+                
+                //connection->request->method = method;
+                //connection->request->url = path;
+                //connection->request->http_minor = minor_version;
+                
+                http_request_complete_request(connection);
             }
             else if (parsed == -1)
             {

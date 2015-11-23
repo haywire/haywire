@@ -57,6 +57,7 @@ int main(int args, char** argsv)
     opt_flag_int(conf, &config.http_listen_port, "port", 8000, "Port to listen on.");
     opt_flag_int(conf, &config.thread_count, "threads", 0, "Number of threads to use.");
     opt_flag_string(conf, &config.parser, "parser", "http_parser", "HTTP parser to use");
+    opt_flag_bool(conf, &config.tcp_nodelay, "tcp_nodelay", "If present, enables tcp_nodelay (i.e. disables Nagle's algorithm).");
     args = opt_config_parse(conf, args, argsv);
 
     //hw_init_from_config("hello_world.conf");

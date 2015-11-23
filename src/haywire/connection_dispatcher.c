@@ -34,8 +34,12 @@ void ipc_connection_cb(uv_stream_t* ipc_pipe, int status)
     pc = calloc(1, sizeof(*pc));
     //ASSERT(pc != NULL);
     
-    if (ipc_pipe->type == UV_TCP)
+    if (ipc_pipe->type == UV_TCP) {
         rc = uv_tcp_init(loop, (uv_tcp_t*) &pc->peer_handle);
+        if (sc->tcp_nodelay) {
+            rc = uv_tcp_nodelay((uv_tcp_t*) &pc->peer_handle, 1);
+        }
+    }
     else if (ipc_pipe->type == UV_NAMED_PIPE)
         rc = uv_pipe_init(loop, (uv_pipe_t*) &pc->peer_handle, 1);
     
@@ -55,7 +59,7 @@ void ipc_connection_cb(uv_stream_t* ipc_pipe, int status)
  * threads. It's kind of cumbersome for such a simple operation, maybe we
  * should revive uv_import() and uv_export().
  */
-void start_connection_dispatching(uv_handle_type type, unsigned int num_servers, struct server_ctx* servers, char* listen_address, int listen_port)
+void start_connection_dispatching(uv_handle_type type, unsigned int num_servers, struct server_ctx* servers, char* listen_address, int listen_port, bool tcp_nodelay)
 {
     int rc;
     struct ipc_server_ctx ctx;
@@ -64,12 +68,18 @@ void start_connection_dispatching(uv_handle_type type, unsigned int num_servers,
     
     loop = uv_default_loop();
     ctx.num_connects = num_servers;
+    ctx.tcp_nodelay = tcp_nodelay;
     
     if (type == UV_TCP)
     {
         uv_ip4_addr(listen_address, listen_port, &listen_addr);
         
         rc = uv_tcp_init(loop, (uv_tcp_t*) &ctx.server_handle);
+        
+        if (ctx.tcp_nodelay) {
+            rc = uv_tcp_nodelay((uv_tcp_t*) &ctx.server_handle, 1);
+        }
+
         rc = uv_tcp_bind((uv_tcp_t*) &ctx.server_handle, (const struct sockaddr*)&listen_addr, 0);
         print_configuration();
         printf("Listening...\n");

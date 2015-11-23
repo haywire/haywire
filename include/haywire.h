@@ -147,6 +147,7 @@ typedef struct
     int http_listen_port;
     int thread_count;
     char* parser;
+    int tcp_nodelay;
 } configuration;
 
 typedef struct

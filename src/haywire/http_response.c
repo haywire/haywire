@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 #include "http_response.h"
 #include "http_response_cache.h"
 #include "haywire.h"
@@ -66,13 +67,30 @@ hw_string* create_response_buffer(hw_http_response* response)
 
     int i = 0;
 
-    response_string->value = calloc(1024, 1);
+    char length_header[] = "Content-Length: ";
+    int line_sep_size = sizeof(CRLF);
+
+    int header_buffer_incr = 1024;
+    int body_size = resp->body.length + line_sep_size;
+    int header_size_remaining = header_buffer_incr;
+    int response_size = header_size_remaining + sizeof(length_header) + (int)(log10(resp->body.length) + 1) + 2 * line_sep_size + body_size + line_sep_size;
+
+    response_string->value = calloc(response_size, 1);
+
     response_string->length = 0;
     append_string(response_string, cached_entry);
     
     for (i=0; i< resp->number_of_headers; i++)
     {
         http_header header = resp->headers[i];
+
+        header_size_remaining -= strlen(header.name.value) + 2 + strlen(header.value.value) + line_sep_size;
+        if (header_size_remaining < 0) {
+            header_size_remaining += header_buffer_incr * ((-header_size_remaining/header_buffer_incr) + 1);
+            response_size += header_size_remaining;
+            response_string->value = realloc(response_string->value, response_size);
+        }
+
         append_string(response_string, &header.name);
         APPENDSTRING(response_string, ": ");
         append_string(response_string, &header.value);
@@ -80,9 +98,9 @@ hw_string* create_response_buffer(hw_http_response* response)
     }
     
     /* Add the body */
-    APPENDSTRING(response_string, "Content-Length: ");
-    
-    string_from_int(&content_length, resp->body.length + 3, 10);
+    APPENDSTRING(response_string, length_header);
+
+    string_from_int(&content_length, body_size, 10);
     append_string(response_string, &content_length);
     APPENDSTRING(response_string, CRLF CRLF);
     

@@ -5,6 +5,7 @@ extern "C" {
 #endif
 
 #include <stdio.h>
+#include <stdbool.h>
 
 #ifdef _WIN32
     /* Windows - set up dll import/export decorators. */
@@ -147,7 +148,7 @@ typedef struct
     int http_listen_port;
     int thread_count;
     char* parser;
-    int tcp_nodelay;
+    bool tcp_nodelay;
 } configuration;
 
 typedef struct

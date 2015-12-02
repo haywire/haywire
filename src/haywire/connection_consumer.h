@@ -1,3 +1,5 @@
+#include <stdbool.h>
+
 #pragma once
 #include "uv.h"
 
@@ -24,6 +26,7 @@ struct server_ctx
     uv_async_t async_handle;
     uv_thread_t thread_id;
     uv_sem_t semaphore;
+    bool tcp_nodelay;
 };
 
 struct ipc_client_ctx
@@ -39,6 +42,7 @@ struct ipc_server_ctx
     handle_storage_t server_handle;
     unsigned int num_connects;
     uv_pipe_t ipc_pipe;
+    bool tcp_nodelay;
 };
 
 void connection_consumer_start(void *arg);

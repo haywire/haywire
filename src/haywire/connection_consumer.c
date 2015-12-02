@@ -6,6 +6,8 @@
 #include "http_connection.h"
 #include "http_response_cache.h"
 
+static bool tcp_nodelay;
+
 void ipc_read_cb(uv_stream_t* handle, ssize_t nread, const uv_buf_t* buf)
 {
     int rc;
@@ -21,8 +23,12 @@ void ipc_read_cb(uv_stream_t* handle, ssize_t nread, const uv_buf_t* buf)
     uv_pipe_pending_count(ipc_pipe);
     type = uv_pipe_pending_type(ipc_pipe);
     
-    if (type == UV_TCP)
+    if (type == UV_TCP) {
         rc = uv_tcp_init(loop, (uv_tcp_t*) ctx->server_handle);
+        if (tcp_nodelay) {
+            rc = uv_tcp_nodelay((uv_tcp_t*) ctx->server_handle, 1);
+        }
+    }
     else if (type == UV_NAMED_PIPE)
         rc = uv_pipe_init(loop, (uv_pipe_t*) ctx->server_handle, 0);
     
@@ -63,6 +69,11 @@ void connection_consumer_new_connection(uv_stream_t* server_handle, int status)
     connection->stream.data = connection;
     
     rc = uv_tcp_init(server_handle->loop, &connection->stream);
+    
+    if (tcp_nodelay) {
+        rc = uv_tcp_nodelay((uv_tcp_t*)&connection->stream, 1);
+    }
+
     rc = uv_accept(server_handle, (uv_stream_t*)&connection->stream);
     rc = uv_read_start((uv_stream_t*)&connection->stream, http_stream_on_alloc, http_stream_on_read);
 }
@@ -95,6 +106,7 @@ void connection_consumer_start(void *arg)
     uv_loop_t* loop;
     
     ctx = arg;
+    tcp_nodelay = ctx->tcp_nodelay;
     loop = uv_loop_new();
     listener_event_loops[ctx->index] = *loop;
     

@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#include <limits.h>
 #include "http_response.h"
 #include "http_response_cache.h"
 #include "haywire.h"
@@ -58,6 +59,16 @@ void hw_set_body(hw_http_response* response, hw_string* body)
     resp->body = *body;
 }
 
+int num_chars(int n) {
+    int r = 1;
+    if (n < 0) n = (n == INT_MIN) ? INT_MAX : -n;
+    while (n > 9) {
+        n /= 10;
+        r++;
+    }
+    return r;
+}
+
 hw_string* create_response_buffer(hw_http_response* response)
 {
     http_response* resp = (http_response*)response;
@@ -73,7 +84,7 @@ hw_string* create_response_buffer(hw_http_response* response)
     int header_buffer_incr = 1024;
     int body_size = resp->body.length + line_sep_size;
     int header_size_remaining = header_buffer_incr;
-    int response_size = header_size_remaining + sizeof(length_header) + (int)(log10(resp->body.length) + 1) + 2 * line_sep_size + body_size + line_sep_size;
+    int response_size = header_size_remaining + sizeof(length_header) + num_chars(resp->body.length) + 2 * line_sep_size + body_size + line_sep_size;
 
     response_string->value = calloc(response_size, 1);
 

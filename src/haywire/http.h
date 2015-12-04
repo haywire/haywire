@@ -18,7 +18,7 @@ typedef struct http_connection
     uv_buf_t response_buffers[1024];
     int response_buffers_count;
     int prevbuflen;
-    char request_buffer[4000096];
+    char* request_buffer;
     int request_buffer_length;
 } http_connection;
 

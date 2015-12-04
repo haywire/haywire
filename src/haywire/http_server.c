@@ -115,7 +115,7 @@ http_connection* create_http_connection()
 {
     http_connection* connection = malloc(sizeof(http_connection));
     connection->request = NULL;
-    connection->request_buffer = calloc(165536, sizeof(char));
+    connection->request_buffer = calloc(32768, sizeof(char));
     connection->request_buffer_length = 0;
     connection->prevbuflen = 0;
     INCREMENT_STAT(stat_connections_created_total);

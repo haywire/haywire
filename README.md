@@ -28,8 +28,13 @@ Haywire uses `gyp` which supports generating make type builds or Visual Studio a
     
     git clone https://github.com/kellabyte/Haywire.git
 
-### Compiling on Linux and Mac OSX
-    ./build.sh
+### Compiling on Linux
+    ./compile_dependencies.sh
+    ./compile_make.sh
+    
+### Compiling on Mac OSX
+    ./compile_dependencies.sh
+    ./compile_xcode.sh
 
 ### Compiling on Windows
 Open the Developer Command Prompt for Visual Studio

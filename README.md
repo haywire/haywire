@@ -36,11 +36,12 @@ Open the Developer Command Prompt for Visual Studio
 
     build.bat
     
-### Current benchmark measurements
+### Benchmarks
 
 Bare metal Rackspace instance    
 Intel(R) Xeon(R) CPU E5-2680 v2 @ 2.80GHz 20 physical cores
 
+##### Throughput
 ```
 ../bin/wrk/wrk --script ./pipelined_get.lua --latency -d 5m -t 40 -c 760 http://server:8000 -- 32
 
@@ -59,7 +60,7 @@ Requests/sec: 9,267,161.41
 Transfer/sec:      1.36GB
 ```
 
-### Latency distribution with coordinated omission at 3.5 million requests/second
+##### Latency distribution with coordinated omission at 3.5 million requests/second
 ```
 ../bin/wrk2/wrk --script ./pipelined_get.lua --latency -d 10s -t 80 -c 512 -R 3500000 http://server:8000 -- 32
 

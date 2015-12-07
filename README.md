@@ -37,41 +37,60 @@ Open the Developer Command Prompt for Visual Studio
     build.bat
     
 ### Current benchmark measurements
-#### Setup 1
-- 1 Azure Large VM (Ubuntu) 4 Haywire instances of Haywire (1 per CPU core) load balanced by HAProxy
-- 1 Azure Large VM (Ubuntu) client running Wrk HTTP benchmarking tool.
 
-#### Results
-- 601,077 requests/second.
-- Average over 800 mbps (Azure network delivers 800 mbps so we are saturating capacity).
-- Average less than 40% CPU usage.
+Bare metal Rackspace instance    
+Intel(R) Xeon(R) CPU E5-2680 v2 @ 2.80GHz 20 physical cores
 
-![Setup 1 results](http://i.imgur.com/nfFXXpk.png)
+```
+../bin/wrk/wrk --script ./pipelined_get.lua --latency -d 5m -t 40 -c 760 http://server:8000 -- 32
 
-#### Setup 2
-- 1 Azure Large VM (Ubuntu) 1 Haywire instance with 4 thread (1 per core) event loop fan out.
-- 1 Azure Large VM (Ubuntu) client running Wrk HTTP benchmarking tool.
+Running 5m test @ http://server:8000
+  40 threads and 760 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     2.04ms    5.38ms 389.00ms   92.75%
+    Req/Sec   233.38k    48.72k  458.99k    86.19%
+  Latency Distribution
+     50%    1.26ms
+     75%    1.96ms
+     90%    4.09ms
+     99%    0.00us
+  2781077938 requests in 5.00m, 409.23GB read
+Requests/sec: 9,267,161.41
+Transfer/sec:      1.36GB
+```
 
-#### Results
-- 574,462 requests/second.
-- Average 800 mbps (Azure network delivers 800 mbps so we are saturating capacity).
-- Average less than 60% CPU usage.
- 
-###### Latency distribution
+### Latency distribution with coordinated omission at 3.5 million requests/second
+```
+../bin/wrk2/wrk --script ./pipelined_get.lua --latency -d 10s -t 80 -c 512 -R 3500000 http://server:8000 -- 32
 
-        wrk -d10 -t24 -c24 --pipeline 512 --latency http://server:8000
-        Running 10s test @ http://server:8000
-          24 threads and 24 connections
-          Thread Stats   Avg      Stdev     Max   +/- Stdev
-            Latency    23.94ms   15.11ms 134.66ms   84.97%
-            Req/Sec    25.57k     9.61k   58.60k    65.55%
-          Latency Distribution
-             50%   19.34ms
-             75%   28.39ms
-             90%   41.16ms
-             99%   79.15ms
-          5743304 requests in 10.00s, 0.87GB read
-        Requests/sec: 574,462.58
-        Transfer/sec:     89.30MB
+Running 10s test @ http://server:8000
+  80 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     1.82ms    3.00ms  64.86ms   94.17%
+    Req/Sec       -nan      -nan   0.00      0.00%
+  Latency Distribution (HdrHistogram - Recorded Latency)
+ 50.000%    1.18ms
+ 75.000%    1.62ms
+ 90.000%    2.34ms
+ 99.000%   16.75ms
+ 99.900%   33.12ms
+ 99.990%   44.70ms
+ 99.999%   52.99ms
+100.000%   64.89ms
 
-![Setup 2 results](http://i.imgur.com/nfaz2rB.png)
+----system---- ----total-cpu-usage---- ------memory-usage----- --io/total- -dsk/total- -net/total- ---system-- -pkt/total- ----tcp-sockets----
+     time     |usr sys idl wai hiq siq| used  buff  cach  free| read  writ| read  writ| recv  send| int   csw |#recv #send|lis act syn tim clo
+03-12 18:58:10|  0   0  99   0   0   0| 712M 95.3M 1203M  124G|0.05  0.22 | 684B   10k|   0     0 |5066  1368 |   0     0 |  3   2   0   0   0
+03-12 18:58:11|  0   0 100   0   0   0| 711M 95.3M 1203M  124G|   0     0 |   0     0 |5538B 1588B| 425   975 |92.0  2.00 |  3   2   0   0   0
+03-12 18:58:12|  5   2  92   0   0   1| 725M 95.3M 1203M  124G|   0     0 |   0     0 |  85M  285M| 220k  112k| 127k  226k|  3 482   0   0   1
+03-12 18:58:13| 10   4  85   0   0   1| 724M 95.3M 1203M  124G|   0  2.00 |   0    32k| 166M  556M| 427k  173k| 243k  438k|  3 482   0   0   1
+03-12 18:58:14| 10   4  85   0   0   1| 725M 95.3M 1203M  124G|   0     0 |   0     0 | 165M  555M| 435k  172k| 243k  438k|  3 482   0   0   1
+03-12 18:58:15| 10   4  85   0   0   1| 723M 95.3M 1203M  124G|   0     0 |   0     0 | 166M  555M| 440k  172k| 243k  438k|  3 482   0   0   1
+03-12 18:58:16| 10   4  86   0   0   1| 724M 95.3M 1203M  124G|   0     0 |   0     0 | 166M  555M| 415k  172k| 243k  438k|  3 482   0   0   1
+03-12 18:58:17| 10   4  85   0   0   1| 723M 95.3M 1203M  124G|   0     0 |   0     0 | 165M  555M| 404k  172k| 243k  438k|  3 482   0   0   1
+03-12 18:58:18| 10   4  85   0   0   1| 724M 95.3M 1203M  124G|   0  5.00 |   0    24k| 165M  555M| 404k  171k| 243k  438k|  3 482   0   0   1
+03-12 18:58:19| 10   4  85   0   0   1| 724M 95.3M 1203M  124G|   0     0 |   0     0 | 166M  555M| 411k  171k| 243k  438k|  3 482   0   0   1
+03-12 18:58:20| 10   4  85   0   0   1| 723M 95.3M 1203M  124G|   0     0 |   0     0 | 166M  555M| 412k  170k| 244k  438k|  3 482   0   0   1
+03-12 18:58:21| 10   4  85   0   0   1| 722M 95.3M 1203M  124G|   0     0 |   0     0 | 166M  555M| 411k  171k| 244k  438k|  3 482   0   0   1
+03-12 18:58:22|  5   2  93   0   0   1| 724M 95.3M 1203M  124G|   0     0 |   0     0 |  76M  256M| 190k   81k| 113k  202k|  3   2   0   0 391
+```

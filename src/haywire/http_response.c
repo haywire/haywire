@@ -81,12 +81,12 @@ hw_string* create_response_buffer(hw_http_response* response)
     char length_header[] = "Content-Length: ";
     int line_sep_size = sizeof(CRLF);
 
-    int header_buffer_incr = 1024;
+    int header_buffer_incr = 512;
     int body_size = resp->body.length + line_sep_size;
     int header_size_remaining = header_buffer_incr;
     int response_size = header_size_remaining + sizeof(length_header) + num_chars(resp->body.length) + 2 * line_sep_size + body_size + line_sep_size;
 
-    response_string->value = calloc(response_size, 1);
+    response_string->value = malloc(response_size);
 
     response_string->length = 0;
     append_string(response_string, cached_entry);
@@ -120,5 +120,6 @@ hw_string* create_response_buffer(hw_http_response* response)
         append_string(response_string, &resp->body);
     }
     APPENDSTRING(response_string, CRLF);
+    response_string->value[response_string->length] = '\0';
     return response_string;
 }

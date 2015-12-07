@@ -95,7 +95,7 @@ hw_string* create_response_buffer(hw_http_response* response)
     {
         http_header header = resp->headers[i];
 
-        header_size_remaining -= strlen(header.name.value) + 2 + strlen(header.value.value) + line_sep_size;
+        header_size_remaining -= header.name.length + 2 + header.value.length + line_sep_size;
         if (header_size_remaining < 0) {
             header_size_remaining += header_buffer_incr * ((-header_size_remaining/header_buffer_incr) + 1);
             response_size += header_size_remaining;

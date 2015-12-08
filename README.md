@@ -1,4 +1,6 @@
 [![Build Status](https://travis-ci.org/kellabyte/Haywire.png?branch=master)](https://travis-ci.org/kellabyte/Haywire)
+[![Join us on #haywire on Freenode](https://kiwiirc.com/buttons/chat.freenode.net/haywire.png)](https://kiwiirc.com/client/chat.freenode.net:+6697/#haywire)
+
 Haywire
 =======
 Haywire is an asynchronous HTTP server framework written in C. The goal of Haywire is to learn how to create a server with a minimal feature set that can handle a high rate of requests and connections with as low of latency and resource usage as possible.

@@ -163,6 +163,8 @@
 
         'sources': [
           'src/samples/hello_world/program.c',
+          'src/samples/hello_world/parse.c',
+          'src/samples/hello_world/opt.c'
         ],
 
         'copies': [

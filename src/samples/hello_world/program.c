@@ -52,7 +52,6 @@ int main(int args, char** argsv)
     config.http_listen_address = "0.0.0.0";
 
     struct opt_config *conf;
-    struct opt_args *arguments;
     conf = opt_config_init();
     opt_flag_int(conf, &config.http_listen_port, "port", 8000, "Port to listen on.");
     opt_flag_int(conf, &config.thread_count, "threads", 0, "Number of threads to use.");
@@ -60,12 +59,11 @@ int main(int args, char** argsv)
     opt_flag_bool(conf, &config.tcp_nodelay, "tcp_nodelay", "If present, enables tcp_nodelay (i.e. disables Nagle's algorithm).");
     args = opt_config_parse(conf, args, argsv);
 
-    //hw_init_from_config("hello_world.conf");
+    /* hw_init_from_config("hello_world.conf"); */
     hw_init_with_config(&config);
     hw_http_add_route(route, get_root, NULL);
     hw_http_open();
 
     opt_config_free(conf);
-    opt_args_free(arguments);
     return 0;
 }

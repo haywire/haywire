@@ -129,7 +129,12 @@ void free_http_connection(http_connection* connection)
         free_http_request(connection->request);
     }
     
-    free(connection->response_buffers);
+    for (int i=0; i<connection->response_buffers_count; i++)
+    {
+        free(connection->response_buffers[i].base);
+    }
+    
+    free(connection->request_buffer);
     free(connection);
     INCREMENT_STAT(stat_connections_destroyed_total);
 }
@@ -281,6 +286,10 @@ void http_stream_on_read_http_parser(uv_stream_t* tcp, ssize_t nread, const uv_b
             /* uv_close((uv_handle_t*) &client->handle, http_stream_on_close); */
         }
     }
+    else if (nread == UV_EOF)
+    {
+        uv_close((uv_handle_t*) &connection->stream, http_stream_on_close);
+    }
     else
     {
         uv_close((uv_handle_t*) &connection->stream, http_stream_on_close);
@@ -293,16 +302,17 @@ void http_stream_on_read_pico(uv_stream_t* tcp, ssize_t nread, const uv_buf_t* b
     http_connection* connection = (http_connection*)tcp->data;
 
     // TODO: nread == 0 should mean the socket closed. We should handle this properly.
-    if (nread >= 0)
+
+    if (nread == UV_EOF)
     {
-        //printf("BEFORE\tREAD: %d BUFF_LEN: %d PREV: %d\n", nread, connection->request_buffer_length, connection->prevbuflen);
-        
+        uv_close((uv_handle_t*) &connection->stream, http_stream_on_close);
+    }
+    else if (nread >= 0)
+    {
         memcpy(&connection->request_buffer[connection->request_buffer_length], buf->base, nread);
         connection->request_buffer_length += nread;
         int counter = 0;
 
-        //printf("AFTER\tREAD: %d BUFF_LEN: %d PREV: %d ", nread, connection->request_buffer_length, connection->prevbuflen);
-        
         while (connection->prevbuflen < connection->request_buffer_length)
         {
             counter++;
@@ -321,8 +331,6 @@ void http_stream_on_read_pico(uv_stream_t* tcp, ssize_t nread, const uv_buf_t* b
                                        &method, &method_len, &path, &path_len, &minor_version, headers,
                                        &num_headers, 0);
 
-            //printf("POS: %d PARSED: %d ----------------------------------------\n", connection->prevbuflen, parsed);
-            
             if (parsed > 0)
             {
                 // Successfully parsed the request.
@@ -332,8 +340,11 @@ void http_stream_on_read_pico(uv_stream_t* tcp, ssize_t nread, const uv_buf_t* b
                 http_request* request = create_http_request(connection);
                 connection->request = request;
                 
+                connection->request->url->value = (char *)malloc(path_len + 1);
+                request->url->length = path_len;
+                strncpy(connection->request->url->value, path, path_len);
                 path[path_len] = 0x00;
-                request->url = path;
+                
                 
                 http_request_complete_request(connection);
             }
@@ -342,8 +353,6 @@ void http_stream_on_read_pico(uv_stream_t* tcp, ssize_t nread, const uv_buf_t* b
                 memmove(connection->request_buffer, &connection->request_buffer[connection->prevbuflen], connection->request_buffer_length - connection->prevbuflen);
                 connection->request_buffer_length = connection->request_buffer_length - connection->prevbuflen;
                 connection->prevbuflen = 0;
-                
-                //printf("BUFF_LEN: %d PREV: %d\n", connection->request_buffer_length, connection->prevbuflen);
                 break;
             }
             else if (parsed == -2)
@@ -357,6 +366,10 @@ void http_stream_on_read_pico(uv_stream_t* tcp, ssize_t nread, const uv_buf_t* b
             connection->request_buffer_length = 0;
             connection->prevbuflen = 0;
         }
+    }
+    else
+    {
+        uv_close((uv_handle_t*) &connection->stream, http_stream_on_close);
     }
     free(buf->base);
     connection->prevbuflen = 0;

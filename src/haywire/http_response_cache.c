@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 #include "uv.h"
 #include "haywire.h"
 #include "hw_string.h"

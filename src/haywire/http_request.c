@@ -25,44 +25,76 @@ static const char response_404[] =
   "404 Not Found" CRLF
   ;
 
+static kh_inline khint_t hw_string_hash_func(hw_string* s)
+{
+    khint_t h = s->length > 0 ? (khint_t)*s->value : 0;
+    if (h) for (int i = 0; i < s->length; i++) h = (h << 5) - h + (khint_t)*(s->value + i);
+    return h;
+}
+
+#define hw_string_hash_equal(a, b) (hw_strcmp(a, b) == 0)
+
+KHASH_INIT(hw_string_hashmap, hw_string*,  hw_string*, 1, hw_string_hash_func, hw_string_hash_equal)
 KHASH_MAP_INIT_STR(string_hashmap, char*)
 
 void hw_print_request_headers(http_request* request)
 {
-    const char* k;
-    const char* v;
+    hw_string* k;
+    hw_string* v;
 
-    khash_t(string_hashmap) *h = request->headers;
-    kh_foreach(h, k, v, { printf("KEY: %s VALUE: %s\n", k, v); });
+    khash_t(hw_string_hashmap) *h = request->headers;
+    kh_foreach(h, k, v, {
+        char* key = strndup(k->value, k->length + 1);
+        char* value = strndup(v->value, v->length + 1);
+        printf("KEY: %s VALUE: %s\n", key, value);
+        free(key);
+        free(value);
+    });
 }
 
-void set_header(http_request* request, char* name, char* value)
+void hw_print_body(http_request* request)
+{
+    char* body = strndup(request->body->value, request->body->length + 1);
+    printf("BODY: %s\n", body);
+    free(body);
+}
+
+void* get_header(http_request* request, hw_string* name)
+{
+    khash_t(hw_string_hashmap) *h = request->headers;
+    khiter_t k = kh_get(hw_string_hashmap, h, name);
+
+    void* val;
+    
+    int is_missing = (k == kh_end(h));
+    if (is_missing) {
+        val = NULL;
+    } else {
+        val = kh_value(h, k);
+    }
+    return val;
+}
+
+void set_header(http_request* request, hw_string* name, hw_string* value)
 {
     int ret;
     khiter_t k;
-    khash_t(string_hashmap) *h = request->headers;
-    k = kh_put(string_hashmap, h, dupstr(name), &ret);
-    kh_value(h, k) = dupstr(value);
-}
-
-void* get_header(http_request* request, char* name)
-{
-    khash_t(string_hashmap) *h = request->headers;
-    khiter_t k = kh_get(string_hashmap, h, name);
-    void* val = kh_value(h, k);
-    int is_missing = (k == kh_end(h));
-    if (is_missing)
-    {
-        val = NULL;
+    khash_t(hw_string_hashmap) *h = request->headers;
+    
+    void* prev = get_header(request, name);
+    if (prev) {
+        free(prev);
     }
-    return val;
+    
+    k = kh_put(hw_string_hashmap, h, name, &ret);
+    kh_value(h, k) = value;
 }
 
 http_request* create_http_request(http_connection* connection)
 {
     http_request* request = malloc(sizeof(http_request));
     request->url = NULL;
-    request->headers = kh_init(string_hashmap);
+    request->headers = kh_init(hw_string_hashmap);
     request->url = malloc(sizeof(hw_string));
     request->url->length = 0;
     request->url->value = NULL;
@@ -70,40 +102,29 @@ http_request* create_http_request(http_connection* connection)
     request->body = malloc(sizeof(hw_string));
     request->body->value = NULL;
     request->body->length = 0;
-    connection->current_header_key_length = 0;
-    connection->current_header_value_length = 0;
     INCREMENT_STAT(stat_requests_created_total);
     return request;
 }
 
 void free_http_request(http_request* request)
 {
-    khash_t(string_hashmap) *h = request->headers;
-    const char* k;
-    const char* v;
+    khash_t(hw_string_hashmap) *h = request->headers;
+    hw_string* k;
+    hw_string* v;
     kh_foreach(h, k, v,
     {
-        free((char*)k);
-        free((char*)v);
+        free((hw_string*)k);
+        free((hw_string*)v);
     });
-    kh_destroy(string_hashmap, request->headers);
+    kh_destroy(hw_string_hashmap, request->headers);
     
-    if (request->body->length > 0)
-    {
-        free(request->body->value);
-    }
-    if (request->url->length > 0)
-    {
-        free(request->url->value);
-        free(request->url);
-    }
-    
+    free(request->url); 
     free(request->body);
     free(request);
     INCREMENT_STAT(stat_requests_destroyed_total);
 }
 
-char* hw_get_header(http_request* request, char* key)
+hw_string* hw_get_header(http_request* request, hw_string* key)
 {
     void* value = get_header(request, key);
     return value;
@@ -134,22 +155,21 @@ int http_request_on_header_field(http_parser *parser, const char *at, size_t len
     http_connection* connection = (http_connection*)parser->data;
     int i = 0;
 
-    if (connection->last_was_value && connection->current_header_key_length > 0)
+    if (connection->last_was_value && connection->current_header_key.length > 0)
     {
         // Save last read header key/value pair.
-        for (i = 0; connection->current_header_key[i]; i++)
+        for (i = 0; i < connection->current_header_key.length; i++)
         {
-            connection->current_header_key[i] = tolower(connection->current_header_key[i]);
+            connection->current_header_key.value[i] = tolower(connection->current_header_key.value[i]);
         }
 
-        set_header(connection->request, connection->current_header_key, connection->current_header_value);
+        set_header(connection->request, hw_strdup(&connection->current_header_key), hw_strdup(&connection->current_header_value));
 
         /* Start of a new header */
-        connection->current_header_key_length = 0;
+        connection->current_header_key.length = 0;
     }
-    memcpy((char *)&connection->current_header_key[connection->current_header_key_length], at, length);
-    connection->current_header_key_length += length;
-    connection->current_header_key[connection->current_header_key_length] = '\0';
+    connection->current_header_key.value = at;
+    connection->current_header_key.length = length;
     connection->last_was_value = 0;
     return 0;
 }
@@ -158,14 +178,13 @@ int http_request_on_header_value(http_parser *parser, const char *at, size_t len
 {
     http_connection* connection = (http_connection*)parser->data;
 
-    if (!connection->last_was_value && connection->current_header_value_length > 0)
+    if (!connection->last_was_value && connection->current_header_value.length > 0)
     {
         /* Start of a new header */
-        connection->current_header_value_length = 0;
+        connection->current_header_value.length = 0;
     }
-    memcpy((char *)&connection->current_header_value[connection->current_header_value_length], at, length);
-    connection->current_header_value_length += length;
-    connection->current_header_value[connection->current_header_value_length] = '\0';
+    connection->current_header_value.value = at;
+    connection->current_header_value.length = length;
     connection->last_was_value = 1;
     return 0;
 }
@@ -175,22 +194,20 @@ int http_request_on_headers_complete(http_parser* parser)
     http_connection* connection = (http_connection*)parser->data;
     int i = 0;
 
-    if (connection->current_header_key_length > 0)
+    if (connection->current_header_key.length > 0)
     {
-        if (connection->current_header_value_length > 0)
+        if (connection->current_header_value.length > 0)
         {
             /* Store last header */
-            for (i = 0; connection->current_header_key[i]; i++)
+            for (i = 0; i < connection->current_header_key.length; i++)
             {
-                connection->current_header_key[i] = tolower(connection->current_header_key[i]);
+                connection->current_header_key.value[i] = tolower(connection->current_header_key.value[i]);
             }
-            set_header(connection->request, connection->current_header_key, connection->current_header_value);
+            set_header(connection->request, hw_strdup(&connection->current_header_key), hw_strdup(&connection->current_header_value));
         }
-        connection->current_header_key[connection->current_header_key_length] = '\0';
-        connection->current_header_value[connection->current_header_value_length] = '\0';
     }
-    connection->current_header_key_length = 0;
-    connection->current_header_value_length = 0;
+    connection->current_header_key.length = 0;
+    connection->current_header_value.length = 0;
     
     connection->request->http_major = parser->http_major;
     connection->request->http_minor = parser->http_minor;
@@ -205,9 +222,12 @@ int http_request_on_body(http_parser *parser, const char *at, size_t length)
     http_connection* connection = (http_connection*)parser->data;
     if (length != 0)
     {
-        connection->request->body->value = realloc(connection->request->body->value, connection->request->body->length + length);
-        memcpy(connection->request->body->value + connection->request->body->length, at, length);
-        connection->request->body->length += length;
+        if (connection->request->body->length == 0) {
+            connection->request->body->value = at;
+            connection->request->body->length = length;
+        } else {
+            connection->request->body->length += length;
+        }
     }
     return 0;
 }
@@ -291,8 +311,6 @@ int http_request_on_message_complete(http_parser* parser)
         hw_free_http_response(response);
     }
     
-    free_http_request(connection->request);
-    connection->request = NULL;
     return 0;
 }
 

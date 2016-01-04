@@ -63,6 +63,9 @@ http_request* create_http_request(http_connection* connection)
     http_request* request = malloc(sizeof(http_request));
     request->url = NULL;
     request->headers = kh_init(string_hashmap);
+    request->url = malloc(sizeof(hw_string));
+    request->url->length = 0;
+    request->url->value = NULL;
     request->body_length = 0;
     request->body = malloc(sizeof(hw_string));
     request->body->value = NULL;
@@ -84,11 +87,17 @@ void free_http_request(http_request* request)
         free((char*)v);
     });
     kh_destroy(string_hashmap, request->headers);
-    free(request->url);
+    
     if (request->body->length > 0)
-    {
+    {		      {
         free(request->body->value);
+    }		      }
+    if (request->url->length > 0)
+    {
+        free(request->url->value);
+        free(request->url);
     }
+    
     free(request->body);
     free(request);
     INCREMENT_STAT(stat_requests_destroyed_total);
@@ -110,13 +119,14 @@ int http_request_on_message_begin(http_parser* parser)
 int http_request_on_url(http_parser *parser, const char *at, size_t length)
 {
     http_connection* connection = (http_connection*)parser->data;
-    char *data = (char *)malloc(sizeof(char) * length + 1);
-
-    strncpy(data, at, length);
-    data[length] = '\0';
-
-    connection->request->url = data;
-
+    
+    // TODO: This should be zero-copy to remove the malloc/strncpy.
+    int buffer_length = sizeof(char) * length + 1;
+    connection->request->url->value = (char *)malloc(buffer_length);
+    connection->request->url->length = buffer_length;
+    strncpy(connection->request->url->value, at, length);
+    connection->request->url->value[length] = '\0';
+    
     return 0;
 }
 
@@ -203,7 +213,7 @@ int http_request_on_body(http_parser *parser, const char *at, size_t length)
     return 0;
 }
 
-hw_route_entry* get_route_callback(char* url)
+hw_route_entry* get_route_callback(hw_string* url)
 {
     hw_route_entry* route_entry = NULL;
     

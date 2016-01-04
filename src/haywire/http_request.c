@@ -89,9 +89,9 @@ void free_http_request(http_request* request)
     kh_destroy(string_hashmap, request->headers);
     
     if (request->body->length > 0)
-    {		      {
+    {
         free(request->body->value);
-    }		      }
+    }
     if (request->url->length > 0)
     {
         free(request->url->value);

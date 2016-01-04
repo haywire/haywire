@@ -157,7 +157,7 @@ typedef struct
     unsigned short http_minor;
     unsigned char method;
     int keep_alive;
-	hw_string* url;
+    hw_string* url;
     void* headers;
     hw_string* body;
     int body_length;

@@ -62,7 +62,7 @@ void* get_header(http_request* request, char* name)
 http_request* create_http_request(http_connection* connection)
 {
     http_request* request = malloc(sizeof(http_request));
-    request->keep_alive = 0;
+    request->keep_alive = 1;
     request->url = NULL;
     request->headers = kh_init(string_hashmap);
     request->url = malloc(sizeof(hw_string));
@@ -225,7 +225,7 @@ hw_route_entry* get_route_callback(hw_string* url)
      
     kh_foreach(h, k, v,
     {
-        int found = hw_route_compare_method(url->value, k);
+        int found = hw_route_compare_method(url, k);
         if (found)
         {
             route_entry = (hw_route_entry*)v;

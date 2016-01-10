@@ -63,6 +63,7 @@ http_request* create_http_request(http_connection* connection)
 {
     http_request* request = malloc(sizeof(http_request));
     request->headers = kh_init(string_hashmap);
+    request->keep_alive = 1;
     request->url = malloc(sizeof(hw_string));
     request->url->length = 0;
     request->url->value = NULL;

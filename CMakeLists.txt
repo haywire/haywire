@@ -12,11 +12,15 @@ add_definitions(-std=gnu99)
 #add_definitions(-mavx)
 add_definitions(-msse4.1)
 add_definitions(-pedantic)
-add_definitions(-O3)
+add_definitions(-O2)
 add_definitions(-Wall)
 add_definitions(-Wextra)
 add_definitions(-Wcast-align)
 add_definitions(-w)
+
+if (UNIX)
+    add_definitions(-DUNIX)
+endif (UNIX)
 
 file(GLOB_RECURSE HAYWIRE_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/haywire/*.h

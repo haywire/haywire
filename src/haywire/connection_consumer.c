@@ -76,7 +76,15 @@ void connection_consumer_new_connection(uv_stream_t* server_handle, int status)
     }
 
     rc = uv_accept(server_handle, (uv_stream_t*)&connection->stream);
+    if (rc != 0)
+    {
+        uv_close((uv_handle_t*) &connection->stream, http_stream_on_close);
+    }
     rc = uv_read_start((uv_stream_t*)&connection->stream, http_stream_on_alloc, http_stream_on_read);
+    if (rc != 0)
+    {
+        uv_close((uv_handle_t*) &connection->stream, http_stream_on_close);
+    }
 }
 
 void connection_consumer_close(uv_async_t* handle, int status)

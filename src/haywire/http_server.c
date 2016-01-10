@@ -341,6 +341,8 @@ void http_stream_on_read_pico(uv_stream_t* tcp, ssize_t nread, const uv_buf_t* b
                 strncpy(connection->request->url->value, path, path_len);
                 path[path_len] = 0x00;
                 
+                // TODO: Zero-copy headers parsed by pico. Need this PR to implement.
+                // https://github.com/kellabyte/Haywire/pull/79
                 
                 http_request_complete_request(connection);
             }

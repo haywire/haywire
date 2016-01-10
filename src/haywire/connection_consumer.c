@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "uv.h"
+#include "http.h"
 #include "connection_consumer.h"
 #include "http_server.h"
 #include "http_connection.h"

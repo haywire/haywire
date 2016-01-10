@@ -3,6 +3,7 @@
 #include <string.h>
 #include <ctype.h>
 #include "haywire.h"
+#include "http.h"
 #include "hw_string.h"
 #include "khash.h"
 #include "http_request.h"
@@ -61,12 +62,10 @@ void* get_header(http_request* request, char* name)
 http_request* create_http_request(http_connection* connection)
 {
     http_request* request = malloc(sizeof(http_request));
-    request->url = NULL;
     request->headers = kh_init(string_hashmap);
     request->url = malloc(sizeof(hw_string));
     request->url->length = 0;
     request->url->value = NULL;
-    request->body_length = 0;
     request->body = malloc(sizeof(hw_string));
     request->body->value = NULL;
     request->body->length = 0;
@@ -270,6 +269,11 @@ void get_404_response(http_request* request, http_response* response)
 int http_request_on_message_complete(http_parser* parser)
 {
     http_connection* connection = (http_connection*)parser->data;
+    return http_request_complete_request(connection);
+}
+
+int http_request_complete_request(struct http_connection* connection)
+{
     hw_route_entry* route_entry = get_route_callback(connection->request->url);
     hw_string* response_buffer;
     hw_write_context* write_context;

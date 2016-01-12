@@ -303,6 +303,7 @@ int http_request_on_message_complete(http_parser* parser)
         // 404 Not Found.
         write_context = malloc(sizeof(hw_write_context));
         write_context->connection = connection;
+        write_context->request = connection->request;
         write_context->callback = 0;
         get_404_response(connection->request, (http_response*)response);
         response_buffer = create_response_buffer(response);
@@ -321,6 +322,7 @@ void hw_http_response_send(hw_http_response* response, void* user_data, http_res
     hw_string* response_buffer = create_response_buffer(response);
     
     write_context->connection = resp->connection;
+    write_context->request = resp->connection->request;
     write_context->user_data = user_data;
     write_context->callback = callback;
     http_server_write_response(write_context, response_buffer);

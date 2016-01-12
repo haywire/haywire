@@ -13,6 +13,7 @@ typedef struct
 typedef struct
 {
     http_connection* connection;
+    http_request* request;
     void* user_data;
     http_response_complete_callback callback;
 } hw_write_context;

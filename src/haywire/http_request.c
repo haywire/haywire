@@ -312,6 +312,9 @@ int http_request_on_message_complete(http_parser* parser)
         hw_free_http_response(response);
     }
     
+    free_http_request(connection->request);
+    connection->request = NULL;
+    
     return 0;
 }
 

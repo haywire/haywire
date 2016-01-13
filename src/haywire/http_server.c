@@ -111,6 +111,10 @@ http_connection* create_http_connection()
 
 void free_http_connection(http_connection* connection)
 {
+    if (connection->request != NULL)
+    {
+        free_http_request(connection->request);
+    }
     free(connection);
     INCREMENT_STAT(stat_connections_destroyed_total);
 }
@@ -303,9 +307,6 @@ void http_server_after_write(uv_write_t* req, int status)
         write_context->callback(write_context->user_data);
     }
     
-    if (write_context->request != NULL) {
-	  free_http_request(write_context->request);
-    }
     write_context->request = NULL;
 
     free(write_context);

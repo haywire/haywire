@@ -121,11 +121,10 @@ int http_request_on_url(http_parser *parser, const char *at, size_t length)
     http_connection* connection = (http_connection*)parser->data;
     
     // TODO: This should be zero-copy to remove the malloc/strncpy.
-    int buffer_length = sizeof(char) * length + 1;
+    int buffer_length = sizeof(char) * length;
     connection->request->url->value = (char *)malloc(buffer_length);
     connection->request->url->length = buffer_length;
     strncpy(connection->request->url->value, at, length);
-    connection->request->url->value[length] = '\0';
     
     return 0;
 }

@@ -102,6 +102,9 @@ http_connection* create_http_connection()
 {
     http_connection* connection = malloc(sizeof(http_connection));
     connection->request = NULL;
+    connection->current_header_key.length = 0;
+    connection->current_header_value.length = 0;
+    connection->last_was_value = 0;
     INCREMENT_STAT(stat_connections_created_total);
     return connection;
 }
@@ -112,7 +115,6 @@ void free_http_connection(http_connection* connection)
     {
         free_http_request(connection->request);
     }
-    
     free(connection);
     INCREMENT_STAT(stat_connections_destroyed_total);
 }
@@ -305,6 +307,8 @@ void http_server_after_write(uv_write_t* req, int status)
         write_context->callback(write_context->user_data);
     }
     
+    write_context->request = NULL;
+
     free(write_context);
     free(resbuf->base);
     free(req);    

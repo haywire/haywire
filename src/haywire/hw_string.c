@@ -13,6 +13,18 @@ hw_string* create_string(const char* value)
     return str;
 }
 
+hw_string* hw_strdup(hw_string* tocopy)
+{
+    hw_string* str = malloc(sizeof(hw_string));
+    str->value = tocopy->value;
+    str->length = tocopy->length;
+    return str;
+}
+
+int hw_strcmp(hw_string* a, hw_string* b) {
+    return strncmp(a->value, b->value, a->length > b->length ? a->length : b->length);
+}
+
 void append_string(hw_string* destination, hw_string* source)
 {
     void* location = (char*)destination->value + destination->length;
@@ -45,8 +57,4 @@ void string_from_int(hw_string* str, int val, int base)
     
     str->value = &buf[i+1];
     str->length = length;
-}
-
-int hw_strcmp(hw_string* a, hw_string* b) {
-    return strncmp(a->value, b->value, a->length > b->length ? a->length : b->length);
 }

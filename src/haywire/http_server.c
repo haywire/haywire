@@ -245,8 +245,8 @@ void http_stream_on_connect(uv_stream_t* stream, int status)
 
 void http_stream_on_alloc(uv_handle_t* client, size_t suggested_size, uv_buf_t* buf)
 {
-    buf->base = malloc(suggested_size);
-    buf->len = suggested_size;
+    void* new_buf = malloc(suggested_size);
+    *buf = uv_buf_init(new_buf, suggested_size);
 }
 
 void http_stream_on_close(uv_handle_t* handle)

@@ -1,12 +1,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <math.h>
 #include <limits.h>
 #include "http_response.h"
+#include "http_server.h"
 #include "http_response_cache.h"
-#include "haywire.h"
-#include "khash.h"
 #include "hw_string.h"
 
 #define CRLF "\r\n"
@@ -16,6 +14,7 @@ hw_http_response hw_create_http_response(http_connection* connection)
 {
     http_response* response = malloc(sizeof(http_response));
     response->connection = connection;
+    response->request = connection->request;
     response->http_major = 1;
     response->http_minor = 1;
     response->body.value = NULL;
@@ -82,7 +81,7 @@ hw_string* create_response_buffer(hw_http_response* response)
     int line_sep_size = sizeof(CRLF);
 
     int header_buffer_incr = 512;
-    int body_size = resp->body.length + line_sep_size;
+    int body_size = resp->body.length;
     int header_size_remaining = header_buffer_incr;
     int response_size = header_size_remaining + sizeof(length_header) + num_chars(resp->body.length) + 2 * line_sep_size + body_size + line_sep_size;
 
@@ -112,14 +111,41 @@ hw_string* create_response_buffer(hw_http_response* response)
     APPENDSTRING(response_string, length_header);
 
     string_from_int(&content_length, body_size, 10);
-    append_string(response_string, &content_length);
+    
+    if (body_size > 0) {
+        append_string(response_string, &content_length);
+    }
+    else {
+        hw_string zero_content;
+        zero_content.value = "0";
+        zero_content.length = 1;
+        append_string(response_string, &zero_content);
+    }
+    
     APPENDSTRING(response_string, CRLF CRLF);
     
-    if (resp->body.length > 0)
+    if (body_size > 0)
     {
         append_string(response_string, &resp->body);
     }
-    APPENDSTRING(response_string, CRLF);
-    response_string->value[response_string->length] = '\0';
     return response_string;
+}
+
+
+void hw_http_response_send(hw_http_response* response, void* user_data, http_response_complete_callback callback)
+{
+    hw_write_context* write_context = malloc(sizeof(hw_write_context));
+    http_response* resp = (http_response*)response;
+    hw_string* response_buffer = create_response_buffer(response);
+
+    write_context->connection = resp->connection;
+    write_context->user_data = user_data;
+    write_context->callback = callback;
+    write_context->request = resp->request;
+
+    http_server_write_response(write_context, response_buffer);
+    resp->sent = 1;
+
+    free(response_buffer);
+    hw_free_http_response(response);
 }

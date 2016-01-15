@@ -3,20 +3,13 @@
 #include "haywire.h"
 #include "http_connection.h"
 #include "http_parser.h"
+#include "http_response.h"
 
 typedef struct
 {
     http_request_callback callback;
     void* user_data;
 } hw_route_entry;
-
-typedef struct
-{
-    http_connection* connection;
-    http_request* request;
-    void* user_data;
-    http_response_complete_callback callback;
-} hw_write_context;
 
 union stream_handle
 {

@@ -10,22 +10,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
 #include <haywire.h>
 #include "uv.h"
-#include "haywire.h"
 #include "hw_string.h"
 #include "khash.h"
 #include "http_server.h"
 #include "connection_consumer.h"
 #include "connection_dispatcher.h"
-#include "http_request.h"
-#include "http_parser.h"
-#include "http_connection.h"
 #include "http_response_cache.h"
 #include "server_stats.h"
-#include "route_compare_method.h"
 #include "configuration/configuration.h"
+#include "http_connection.h"
 
 #define UVERR(err, msg) fprintf(stderr, "%s: %s\n", msg, uv_strerror(err))
 #define CHECK(r, msg) \
@@ -37,7 +32,7 @@ exit(1); \
 
 KHASH_MAP_INIT_STR(string_hashmap, hw_route_entry*)
 
-static configuration* config;
+configuration* config;
 static uv_tcp_t server;
 static http_parser_settings parser_settings;
 static struct sockaddr_in listen_address;
@@ -54,7 +49,6 @@ uv_barrier_t* listeners_created_barrier;
 
 int hw_init_with_config(configuration* c)
 {
-    int http_listen_address_length;
 #ifdef DEBUG
     char route[] = "/stats";
     hw_http_add_route(route, get_server_stats, NULL);
@@ -67,6 +61,7 @@ int hw_init_with_config(configuration* c)
     config->tcp_nodelay = c->tcp_nodelay;
     config->listen_backlog = c->listen_backlog? c->listen_backlog : SOMAXCONN;
     config->parser = dupstr(c->parser);
+    config->max_request_size = c->max_request_size;
 
     http_v1_0 = create_string("HTTP/1.0 ");
     http_v1_1 = create_string("HTTP/1.1 ");
@@ -92,32 +87,31 @@ int hw_init_from_config(char* configuration_filename)
 
 void print_configuration()
 {
-    printf("Address: %s\nPort: %d\nThreads: %d\nParser: %s\nTCP No Delay: %s\nListen backlog: %d\n",
+    printf("Address: %s\nPort: %d\nThreads: %d\nParser: %s\nTCP No Delay: %s\nListen backlog: %d\nMaximum request size: %d\n",
            config->http_listen_address,
            config->http_listen_port,
            config->thread_count,
            config->parser,
            config->tcp_nodelay? "on": "off",
-           config->listen_backlog);
+           config->listen_backlog,
+           config->max_request_size);
 }
 
 http_connection* create_http_connection()
 {
-    http_connection* connection = malloc(sizeof(http_connection));
-    connection->request = NULL;
-    connection->current_header_key.length = 0;
-    connection->current_header_value.length = 0;
-    connection->last_was_value = 0;
+    http_connection* connection = calloc(1, sizeof(http_connection));
+    connection->buffer = http_request_buffer_init(config->max_request_size);
     INCREMENT_STAT(stat_connections_created_total);
     return connection;
 }
 
 void free_http_connection(http_connection* connection)
 {
-    if (connection->request != NULL)
+    if (connection->request)
     {
         free_http_request(connection->request);
     }
+    http_request_buffer_destroy(connection->buffer);
     free(connection);
     INCREMENT_STAT(stat_connections_destroyed_total);
 }
@@ -242,56 +236,180 @@ void http_stream_on_connect(uv_stream_t* stream, int status)
     
     connection->parser.data = connection;
     connection->stream.data = connection;
-    
+
     /* TODO: Use the return values from uv_accept() and uv_read_start() */
     uv_accept(stream, (uv_stream_t*)&connection->stream);
+    connection->state = OPEN;
     uv_read_start((uv_stream_t*)&connection->stream, http_stream_on_alloc, http_stream_on_read);
 }
 
 void http_stream_on_alloc(uv_handle_t* client, size_t suggested_size, uv_buf_t* buf)
 {
-    buf->base = malloc(suggested_size);
-    buf->len = suggested_size;
+    http_connection* connection = (http_connection*)client->data;
+
+    bool success = http_request_buffer_alloc(connection->buffer, suggested_size);
+    hw_request_buffer_chunk chunk;
+    chunk.size = 0;
+    chunk.buffer = NULL;
+
+    if (success) {
+        http_request_buffer_chunk(connection->buffer, &chunk);
+    } else {
+        /* TODO out of memory event - we should hook up an application callback to this */
+    }
+
+    *buf = uv_buf_init(chunk.buffer, chunk.size);
 }
 
 void http_stream_on_close(uv_handle_t* handle)
 {
-    http_connection* connection = (http_connection*)handle->data;
-    free_http_connection(connection);
+    uv_handle_t* stream = handle;
+    http_connection* connection = stream->data;
+
+    if (connection->state != CLOSED) {
+        connection->state = CLOSED;
+        http_connection* connection = (http_connection*)handle->data;
+        free_http_connection(connection);
+    }
+}
+
+void http_stream_close_connection(http_connection* connection) {
+    if (connection->state == OPEN) {
+        connection->state = CLOSING;
+        uv_close(&connection->stream, http_stream_on_close);
+    }
+}
+
+void handle_request_error(http_connection* connection)
+{
+    uv_handle_t* stream = &connection->stream;
+
+    if (connection->state == OPEN) {
+        uv_read_stop(stream);
+    }
+
+    connection->keep_alive = false;
+
+    if (connection->request) {
+        if (connection->state == OPEN) {
+            /* Send the error message back. */
+            http_request_on_message_complete(&connection->parser);
+        }
+    } else {
+        http_stream_close_connection(connection);
+    }
+}
+
+void handle_bad_request(http_connection* connection)
+{
+    if (connection->request) {
+        connection->request->state = BAD_REQUEST;
+    }
+
+    handle_request_error(connection);
+}
+
+void handle_buffer_exceeded_error(http_connection* connection)
+{
+    if (connection->request) {
+        connection->request->state = SIZE_EXCEEDED;
+    }
+
+    handle_request_error(connection);
+}
+
+void handle_internal_error(http_connection* connection)
+{
+    if (connection->request) {
+        connection->request->state = INTERNAL_ERROR;
+    }
+
+    handle_request_error(connection);
+}
+
+void http_stream_on_shutdown(uv_shutdown_t* req, int status)
+{
+    http_connection* connection = req->data;
+    uv_handle_t* stream = &connection->stream;
+    if (connection->state == OPEN) {
+        http_stream_close_connection(connection);
+    }
+    free(req);
 }
 
 void http_stream_on_read_http_parser(uv_stream_t* tcp, ssize_t nread, const uv_buf_t* buf)
 {
-    size_t parsed;
     http_connection* connection = (http_connection*)tcp->data;
-    
-    if (nread >= 0)
-    {
-        parsed = http_parser_execute(&connection->parser, &parser_settings, buf->base, nread);
-        if (parsed < nread)
-        {
-            /* uv_close((uv_handle_t*) &client->handle, http_stream_on_close); */
+
+    if (nread > 0) {
+        /* Need to tell the buffer that we care about the next nread bytes */
+        http_request_buffer_consume(connection->buffer, nread);
+
+        http_parser_execute(&connection->parser, &parser_settings, (const char*) buf->base, nread);
+
+        if (connection->parser.http_errno) {
+            handle_bad_request(connection);
+        } else {
+            /* We finished processing this chunk of data, therefore we can't get rid of any chunks that were read before
+             * the current one we're reading.
+             *
+             * We can't get rid of the one we're currently processing as it may contain a partial request that will
+             * only be complete with the next chunk coming into a subsequent call of this function. */
+            http_request_buffer_sweep(connection->buffer);
         }
+    } else if (nread == 0) {
+        /* no-op - there's no data to be read, but there might be later */
     }
-    else
-    {
-        uv_close((uv_handle_t*) &connection->stream, http_stream_on_close);
+    else if (nread == UV_ENOBUFS) {
+        handle_buffer_exceeded_error(connection);
     }
-    free(buf->base);
+    else if (nread == UV_EOF){
+        uv_shutdown_t* req = malloc(sizeof(uv_shutdown_t));
+        req->data = connection;
+        uv_shutdown(req, &connection->stream, http_stream_on_shutdown);
+    }
+    else if (nread == UV_ECONNRESET || nread == UV_ECONNABORTED) {
+        /* Let's close the connection as the other peer just disappeared */
+        http_stream_close_connection(connection);
+    } else {
+        /* We didn't see this coming, but an unexpected UV error code was passed in, so we'll
+         * respond with a blanket 500 error if we can */
+        handle_internal_error(connection);
+    }
+}
+
+void http_server_cleanup_write(char* response_string, hw_write_context* write_context, uv_write_t* write_req)
+{
+    free(response_string);
+    free(write_context);
+    free(write_req);
 }
 
 int http_server_write_response_single(hw_write_context* write_context, hw_string* response)
 {
-    uv_write_t* write_req = (uv_write_t *)malloc(sizeof(*write_req) + sizeof(uv_buf_t));
-    uv_buf_t* resbuf = (uv_buf_t *)(write_req+1);
-    
-    resbuf->base = response->value;
-    resbuf->len = response->length + 1;
-    
-    write_req->data = write_context;
-    
-    /* TODO: Use the return values from uv_write() */
-    uv_write(write_req, (uv_stream_t*)&write_context->connection->stream, resbuf, 1, http_server_after_write);
+    http_connection* connection = write_context->connection;
+
+    if (connection->state == OPEN) {
+        uv_write_t *write_req = (uv_write_t *) malloc(sizeof(*write_req) + sizeof(uv_buf_t));
+        uv_buf_t *resbuf = (uv_buf_t *) (write_req + 1);
+
+        resbuf->base = response->value;
+        resbuf->len = response->length;
+
+        write_req->data = write_context;
+
+        uv_stream_t *stream = (uv_stream_t *) &write_context->connection->stream;
+
+        if (uv_is_writable(stream)) {
+            /* Ensuring that the the response can still be written. */
+            uv_write(write_req, stream, resbuf, 1, http_server_after_write);
+            /* TODO: Use the return values from uv_write() */
+        } else {
+            /* The connection was closed, so we can write the response back, but we still need to free up things */
+            http_server_cleanup_write(resbuf->base, write_context, write_req);
+        }
+    }
+
     return 0;
 }
 
@@ -299,20 +417,19 @@ void http_server_after_write(uv_write_t* req, int status)
 {
     hw_write_context* write_context = (hw_write_context*)req->data;
     uv_buf_t *resbuf = (uv_buf_t *)(req+1);
-    
-    if (!write_context->connection->keep_alive)
-    {
-        uv_close((uv_handle_t*)req->handle, http_stream_on_close);
+    uv_handle_t* stream = (uv_handle_t*) req->handle;
+
+    http_connection* connection = write_context->connection;
+
+    if (!connection->keep_alive && connection->state == OPEN) {
+        http_stream_close_connection(connection);
     }
     
-    if (write_context->callback != 0)
+    if (write_context->callback)
     {
         write_context->callback(write_context->user_data);
     }
-    
-    write_context->request = NULL;
 
-    free(write_context);
-    free(resbuf->base);
-    free(req);    
+    http_server_cleanup_write(resbuf->base, write_context, req);
 }
+

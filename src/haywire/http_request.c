@@ -32,9 +32,12 @@ static kh_inline khint_t hw_string_hash_func(hw_string* s)
     return h;
 }
 
+
 #define hw_string_hash_equal(a, b) (hw_strcmp(a, b) == 0)
 
 KHASH_INIT(hw_string_hashmap, hw_string*,  hw_string*, 1, hw_string_hash_func, hw_string_hash_equal)
+KHASH_INIT(offset_hashmap, hw_string*, int*, 1, hw_string_hash_func, hw_string_hash_equal)
+
 KHASH_MAP_INIT_STR(string_hashmap, char*)
 
 void hw_print_request_headers(http_request* request)
@@ -92,15 +95,10 @@ void set_header(http_request* request, hw_string* name, hw_string* value)
 
 http_request* create_http_request(http_connection* connection)
 {
-    http_request* request = malloc(sizeof(http_request));
+    http_request* request = calloc(1, sizeof(http_request));
     request->headers = kh_init(hw_string_hashmap);
-    request->url = malloc(sizeof(hw_string));
-    request->url->length = 0;
-    request->url->value = NULL;
-    request->body_length = 0;
-    request->body = malloc(sizeof(hw_string));
-    request->body->value = NULL;
-    request->body->length = 0;
+    request->url = calloc(1, sizeof(hw_string));
+    request->body = calloc(1, sizeof(hw_string));
     INCREMENT_STAT(stat_requests_created_total);
     return request;
 }
@@ -116,11 +114,6 @@ void free_http_request(http_request* request)
         free((hw_string*)v);
     });
     kh_destroy(hw_string_hashmap, request->headers);
-
-    if (request->url->length > 0)
-    {
-        free(request->url->value);
-    }
     free(request->url); 
     free(request->body);
     free(request);
@@ -143,12 +136,8 @@ int http_request_on_message_begin(http_parser* parser)
 int http_request_on_url(http_parser *parser, const char *at, size_t length)
 {
     http_connection* connection = (http_connection*)parser->data;
-    
-    // TODO: This should be zero-copy to remove the malloc/strncpy.
-    int buffer_length = sizeof(char) * length;
-    connection->request->url->value = (char *)malloc(buffer_length);
-    connection->request->url->length = buffer_length;
-    strncpy(connection->request->url->value, at, length);
+    connection->request->url->value = at;
+    connection->request->url->length = length;
     
     return 0;
 }
@@ -232,6 +221,7 @@ int http_request_on_body(http_parser *parser, const char *at, size_t length)
             connection->request->body->length += length;
         }
     }
+    
     return 0;
 }
 
@@ -297,6 +287,8 @@ int http_request_on_message_complete(http_parser* parser)
     hw_write_context* write_context;
     hw_http_response* response = hw_create_http_response(connection);
     
+    http_request_commit_offsets(connection->buffer, &connection->offsets, connection->request);
+    
     if (route_entry != NULL)
     {
         route_entry->callback(connection->request, response, route_entry->user_data);
@@ -314,7 +306,11 @@ int http_request_on_message_complete(http_parser* parser)
         free(response_buffer);
         hw_free_http_response(response);
     }
-    
+
+    if (connection->keep_alive) {
+        http_request_reset_offsets(&connection->offsets);
+    }
+
     free_http_request(connection->request);
     connection->request = NULL;
     
@@ -336,4 +332,124 @@ void hw_http_response_send(hw_http_response* response, void* user_data, http_res
     
     free(response_buffer);
     hw_free_http_response(response);
+}
+
+void free_http_request_header_offsets_values(http_request_offsets* offsets) {
+    khash_t(offset_hashmap) *name_offsets = offsets->header_name_offsets;
+    khash_t(offset_hashmap) *value_offsets = offsets->header_value_offsets;
+    hw_string* name;
+    hw_string* value;
+    int* offset;
+    
+    if (name_offsets) {
+        kh_foreach(name_offsets, name, offset,
+        {
+            /* the keys are not freed as they'll be used in the headers map */
+            free(offset);
+        });
+    }
+    
+
+    if (value_offsets) {
+        kh_foreach(value_offsets, value, offset,
+        {
+            /* the keys are not freed as they'll be used in the headers map */
+            free(offset);
+        });
+    }
+}
+void free_http_request_header_offsets(http_request_offsets* offsets) {
+    free_http_request_header_offsets_values(offsets);
+    kh_destroy(offset_hashmap, offsets->header_name_offsets);
+    kh_destroy(offset_hashmap, offsets->header_value_offsets);
+}
+
+void http_request_reset_offsets(http_request_offsets* offsets) {
+    offsets->url_offset = 0;
+    offsets->body_offset = 0;
+    free_http_request_header_offsets_values(offsets);
+    offsets->in_use = 0;
+}
+
+void http_request_update_offsets(void* old_buffer, void* new_buffer, http_request_offsets* offsets, http_request* request) {
+    hw_string* header_name;
+    hw_string* header_value;
+    
+    if (!request) {
+        /* it's possible that this is called even before the parser has had the chance to detect the beginning of the request */
+        return;
+    }
+    
+    if (!offsets->in_use) {
+        /* first time initialization */
+        offsets->header_name_offsets = kh_init(offset_hashmap);
+        offsets->header_value_offsets = kh_init(offset_hashmap);
+        offsets->in_use = 1;
+    }
+    
+    if (offsets->url_offset == 0 && request->url && request->url->length > 0) {
+        offsets->url_offset = (void*) request->url->value - old_buffer;
+    }
+    
+    if (offsets->body_offset == 0 && request->body && request->body->length > 0) {
+        offsets->body_offset = (void*) request->body->value - old_buffer;
+    }
+    
+    khash_t(hw_string_hashmap) *header_map = request->headers;
+    khash_t(offset_hashmap) *name_offsets = offsets->header_name_offsets;
+    khash_t(offset_hashmap) *value_offsets = offsets->header_value_offsets;
+    
+    if (header_map) {
+        kh_foreach(header_map, header_name, header_value, {
+            khiter_t name_offset_key = kh_get(offset_hashmap, name_offsets, header_name);
+            khiter_t value_offset_key = kh_get(offset_hashmap, value_offsets, header_name);
+            
+            int* offset;
+            int ret;
+            khint_t k;
+
+            int is_missing = (name_offset_key == kh_end(name_offsets));
+            if (is_missing) {
+                offset = malloc(sizeof(int));
+                *offset = (void*) header_name->value - old_buffer + new_buffer;
+                k = kh_put(offset_hashmap, name_offsets, header_name, &ret);
+                kh_value(name_offsets, k) = offset;
+            }
+        
+            is_missing = (value_offset_key == kh_end(value_offsets));
+            if (is_missing) {
+                offset = malloc(sizeof(int));
+                *offset = (void*) header_value->value - old_buffer + new_buffer;
+                k = kh_put(offset_hashmap, value_offsets, header_name, &ret);
+                kh_value(value_offsets, k) = offset;
+            }
+        });
+    }
+}
+
+void http_request_commit_offsets(void* buffer, http_request_offsets* offsets, http_request* request) {
+    if (offsets != NULL && offsets->in_use) {
+        hw_string* header_name;
+        hw_string* header_value;
+        
+        request->body->value = buffer + offsets->body_offset;
+        request->url->value = buffer + offsets->url_offset;
+        
+        khash_t(hw_string_hashmap) *header_map = request->headers;
+        khash_t(offset_hashmap) *name_offsets = offsets->header_name_offsets;
+        khash_t(offset_hashmap) *value_offsets = offsets->header_value_offsets;
+
+        kh_foreach(header_map, header_name, header_value, {
+            khiter_t name_offset_key = kh_get(offset_hashmap, name_offsets, header_name);
+            khiter_t value_offset_key = kh_get(offset_hashmap, value_offsets, header_name);
+            
+            int offset;
+            
+            offset = *kh_value(name_offsets, name_offset_key);
+            header_name->value = buffer + offset;
+            
+            offset = *kh_value(value_offsets, value_offset_key);
+            header_value->value = buffer + offset;
+        });
+    }
 }

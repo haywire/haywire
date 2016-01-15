@@ -107,20 +107,21 @@ void print_configuration()
 
 http_connection* create_http_connection()
 {
-    http_connection* connection = malloc(sizeof(http_connection));
-    connection->request = NULL;
-    connection->current_header_key.length = 0;
-    connection->current_header_value.length = 0;
-    connection->last_was_value = 0;
+    http_connection* connection = calloc(1, sizeof(http_connection));
     INCREMENT_STAT(stat_connections_created_total);
     return connection;
 }
 
 void free_http_connection(http_connection* connection)
 {
+    free_http_request_header_offsets(&connection->offsets);
     if (connection->request != NULL)
     {
         free_http_request(connection->request);
+    }
+    if (connection->buffer != NULL)
+    {
+        free(connection->buffer);
     }
     free(connection);
     INCREMENT_STAT(stat_connections_destroyed_total);
@@ -255,8 +256,43 @@ void http_stream_on_connect(uv_stream_t* stream, int status)
 
 void http_stream_on_alloc(uv_handle_t* client, size_t suggested_size, uv_buf_t* buf)
 {
-    void* new_buf = malloc(suggested_size);
-    *buf = uv_buf_init(new_buf, suggested_size);
+    /* TODO: log when malloc/realloc set errno and kill the request */
+    
+    http_connection* connection = (http_connection*)client->data;
+    void* new_buffer;
+    size_t new_size;
+    
+    if (!connection->buffer) {
+        connection->buffer = malloc(suggested_size);
+        connection->buffer_size = suggested_size;
+        new_size = suggested_size;
+        new_buffer = connection->buffer;
+    } else if (connection->buffer_used * 2 < connection->buffer_size) {
+        /* ignoring suggested size unless we're above 50% usage, as suggested_size is the initial buffer size */
+        new_size = connection->buffer_size - connection->buffer_used;
+        new_buffer = connection->buffer + connection->buffer_used;
+    } else {
+        /* time to reallocate memory and re-point anything using the buffer */
+
+        /* TODO cap the maximum size of the buffer to a configurable value, to avoid a simple DoS attack caused by sending a huge payload */
+        void* old_buffer = connection->buffer;
+        
+        
+        connection->buffer = realloc(old_buffer, connection->buffer_size + suggested_size);
+        connection->buffer_size += suggested_size;
+        new_size = connection->buffer_size - connection->buffer_used;
+    
+        if (connection->buffer != old_buffer) {
+            http_request_update_offsets(old_buffer, connection->buffer, &connection->offsets, connection->request);
+            
+            connection->current_header_key.value = (hw_string*) ((void*) connection->current_header_key.value - old_buffer + connection->buffer);
+            connection->current_header_value.value = (hw_string*) ((void*) connection->current_header_value.value - old_buffer + connection->buffer);
+        }
+    
+        new_buffer = (void *) connection->buffer + connection->buffer_used;
+    }
+    
+    *buf = uv_buf_init(new_buffer, new_size);
 }
 
 void http_stream_on_close(uv_handle_t* handle)
@@ -272,6 +308,7 @@ void http_stream_on_read_http_parser(uv_stream_t* tcp, ssize_t nread, const uv_b
     
     if (nread >= 0)
     {
+        connection->buffer_used += nread;
         parsed = http_parser_execute(&connection->parser, &parser_settings, buf->base, nread);
         if (parsed < nread)
         {
@@ -282,16 +319,15 @@ void http_stream_on_read_http_parser(uv_stream_t* tcp, ssize_t nread, const uv_b
     {
         uv_close((uv_handle_t*) &connection->stream, http_stream_on_close);
     }
-    free(buf->base);
 }
 
 int http_server_write_response_single(hw_write_context* write_context, hw_string* response)
 {
-    uv_write_t* write_req = (uv_write_t *)malloc(sizeof(*write_req) + sizeof(uv_buf_t));
+    uv_write_t* write_req = (uv_write_t *)malloc(sizeof(*write_req) + sizeof(uv_buf_t)*2);
     uv_buf_t* resbuf = (uv_buf_t *)(write_req+1);
     
     resbuf->base = response->value;
-    resbuf->len = response->length + 1;
+    resbuf->len = response->length;
     
     write_req->data = write_context;
     
@@ -307,6 +343,7 @@ void http_server_after_write(uv_write_t* req, int status)
     
     if (!write_context->connection->keep_alive)
     {
+        printf("Closing connection.\n");
         uv_close((uv_handle_t*)req->handle, http_stream_on_close);
     }
     
@@ -315,9 +352,15 @@ void http_server_after_write(uv_write_t* req, int status)
         write_context->callback(write_context->user_data);
     }
     
+    if (write_context->connection->keep_alive) {
+        http_request_reset_offsets(&write_context->connection->offsets);
+    }
+    
+    free(write_context->connection->buffer);
+    write_context->connection->buffer = NULL;
+    write_context->connection->buffer_size = 0;
     write_context->request = NULL;
-
     free(write_context);
     free(resbuf->base);
-    free(req);    
+    free(req);
 }

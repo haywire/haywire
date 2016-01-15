@@ -93,7 +93,6 @@ void set_header(http_request* request, hw_string* name, hw_string* value)
 http_request* create_http_request(http_connection* connection)
 {
     http_request* request = malloc(sizeof(http_request));
-    request->url = NULL;
     request->headers = kh_init(hw_string_hashmap);
     request->url = malloc(sizeof(hw_string));
     request->url->length = 0;
@@ -117,7 +116,11 @@ void free_http_request(http_request* request)
         free((hw_string*)v);
     });
     kh_destroy(hw_string_hashmap, request->headers);
-    
+
+    if (request->url->length > 0)
+    {
+        free(request->url->value);
+    }
     free(request->url); 
     free(request->body);
     free(request);

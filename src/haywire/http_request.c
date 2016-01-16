@@ -28,7 +28,8 @@ static const char response_404[] =
 static kh_inline khint_t hw_string_hash_func(hw_string* s)
 {
     khint_t h = s->length > 0 ? (khint_t)*s->value : 0;
-    if (h) for (int i = 0; i < s->length; i++) h = (h << 5) - h + (khint_t)*(s->value + i);
+	int i;
+    if (h) for (i = 0; i < s->length; i++) h = (h << 5) - h + (khint_t)*(s->value + i);
     return h;
 }
 
@@ -44,8 +45,8 @@ void hw_print_request_headers(http_request* request)
 
     khash_t(hw_string_hashmap) *h = request->headers;
     kh_foreach(h, k, v, {
-        char* key = strndup(k->value, k->length + 1);
-        char* value = strndup(v->value, v->length + 1);
+        char* key = uv__strndup(k->value, k->length + 1);
+        char* value = uv__strndup(v->value, v->length + 1);
         printf("KEY: %s VALUE: %s\n", key, value);
         free(key);
         free(value);
@@ -54,7 +55,7 @@ void hw_print_request_headers(http_request* request)
 
 void hw_print_body(http_request* request)
 {
-    char* body = strndup(request->body->value, request->body->length + 1);
+    char* body = uv__strndup(request->body->value, request->body->length + 1);
     printf("BODY: %s\n", body);
     free(body);
 }

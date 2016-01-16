@@ -18,6 +18,10 @@ add_definitions(-Wextra)
 add_definitions(-Wcast-align)
 add_definitions(-w)
 
+if (UNIX)
+    add_definitions(-DUNIX)
+endif (UNIX)
+
 file(GLOB_RECURSE HAYWIRE_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/haywire/*.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/haywire/*.hpp

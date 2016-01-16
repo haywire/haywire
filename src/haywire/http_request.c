@@ -76,7 +76,7 @@ void* get_header(http_request* request, hw_string* name)
     return val;
 }
 
-void set_header(http_request* request, hw_string* name, hw_string* value)
+void set_request_header(http_request* request, hw_string* name, hw_string* value)
 {
     int ret;
     khiter_t k;
@@ -167,7 +167,7 @@ int http_request_on_header_field(http_parser *parser, const char *at, size_t len
             connection->current_header_key.value[i] = tolower(connection->current_header_key.value[i]);
         }
 
-        set_header(connection->request, hw_strdup(&connection->current_header_key), hw_strdup(&connection->current_header_value));
+        set_request_header(connection->request, hw_strdup(&connection->current_header_key), hw_strdup(&connection->current_header_value));
 
         /* Start of a new header */
         connection->current_header_key.length = 0;
@@ -207,7 +207,7 @@ int http_request_on_headers_complete(http_parser* parser)
             {
                 connection->current_header_key.value[i] = tolower(connection->current_header_key.value[i]);
             }
-            set_header(connection->request, hw_strdup(&connection->current_header_key), hw_strdup(&connection->current_header_value));
+            set_request_header(connection->request, hw_strdup(&connection->current_header_key), hw_strdup(&connection->current_header_value));
         }
     }
     connection->current_header_key.length = 0;

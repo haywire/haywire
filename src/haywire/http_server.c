@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <haywire.h>
 #include "uv.h"
 #include "haywire.h"
 #include "hw_string.h"
@@ -346,7 +347,11 @@ void http_stream_on_read_pico(uv_stream_t* tcp, ssize_t nread, const uv_buf_t* b
                 
                 // TODO: Zero-copy headers parsed by pico. Need this PR to implement.
                 // https://github.com/kellabyte/Haywire/pull/79
-                
+                for (int i=0; i<num_headers; i++)
+                {
+                    set_request_header(connection->request, hw_strdup(&headers[i].name), hw_strdup(&headers[i].value));
+                }
+
                 http_request_complete_request(connection);
             }
             else if (parsed == -1)

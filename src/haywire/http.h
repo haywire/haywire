@@ -10,10 +10,8 @@ typedef struct http_connection
     http_parser parser;
     uv_write_t write_req;
     http_request* request;
-    char current_header_key[1024];
-    int current_header_key_length;
-    char current_header_value[1024];
-    int current_header_value_length;
+    hw_string current_header_key;
+    hw_string current_header_value;
     int keep_alive;
     int last_was_value;
     uv_buf_t response_buffers[1024];

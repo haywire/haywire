@@ -118,6 +118,9 @@ http_connection* create_http_connection()
     connection->request_buffer = calloc(32768, sizeof(char));
     connection->request_buffer_length = 0;
     connection->prevbuflen = 0;
+    connection->current_header_key.length = 0;
+    connection->current_header_value.length = 0;
+    connection->last_was_value = 0;
     INCREMENT_STAT(stat_connections_created_total);
     return connection;
 }
@@ -403,6 +406,8 @@ void http_server_after_write(uv_write_t* req, int status)
         write_context->callback(write_context->user_data);
     }
     
+    write_context->request = NULL;
+
     free(write_context);
     free(resbuf->base);
     free(req);    

@@ -35,3 +35,4 @@ build/
 
 # Lazily-resolved dependencies
 lib/
+.idea

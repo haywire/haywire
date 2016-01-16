@@ -160,7 +160,6 @@ typedef struct
     hw_string* url;
     void* headers;
     hw_string* body;
-    int body_length;
 } http_request;
 
 typedef	void* hw_http_response;

@@ -20,6 +20,7 @@
 #include "connection_dispatcher.h"
 #include "http_request.h"
 #include "http_parser.h"
+#include "picohttpparser.h"
 #include "http_connection.h"
 #include "http_response_cache.h"
 #include "server_stats.h"
@@ -51,6 +52,13 @@ uv_async_t* listener_async_handles;
 uv_loop_t* listener_event_loops;
 uv_barrier_t* listeners_created_barrier;
 
+void signal_handler(int signal)
+{
+    // TODO: We should clean up initialization leak gracefully.
+    // https://github.com/kellabyte/Haywire/pull/83
+    exit(EXIT_SUCCESS);
+}
+
 int hw_init_with_config(configuration* c)
 {
     int http_listen_address_length;
@@ -74,6 +82,11 @@ int hw_init_with_config(configuration* c)
     {
         http_stream_on_read = &http_stream_on_read_http_parser;
     }
+    else if (strcmp(config->parser, "pico") == 0)
+    {
+        http_stream_on_read = &http_stream_on_read_pico;
+    }
+    
     http_server_write_response = &http_server_write_response_single;
     return 0;
 }
@@ -102,6 +115,9 @@ http_connection* create_http_connection()
 {
     http_connection* connection = malloc(sizeof(http_connection));
     connection->request = NULL;
+    connection->request_buffer = calloc(32768, sizeof(char));
+    connection->request_buffer_length = 0;
+    connection->prevbuflen = 0;
     connection->current_header_key.length = 0;
     connection->current_header_value.length = 0;
     connection->last_was_value = 0;
@@ -115,6 +131,8 @@ void free_http_connection(http_connection* connection)
     {
         free_http_request(connection->request);
     }
+    
+    free(connection->request_buffer);
     free(connection);
     INCREMENT_STAT(stat_connections_destroyed_total);
 }
@@ -165,9 +183,10 @@ int hw_http_open()
     parser_settings.on_message_complete = http_request_on_message_complete;
     parser_settings.on_url = http_request_on_url;
     
-#ifdef PLATFORM_POSIX
+#ifdef UNIX
     signal(SIGPIPE, SIG_IGN);
-#endif // PLATFORM_POSIX
+    signal(SIGINT, signal_handler);
+#endif // UNIX
     
     listener_count = threads;
     
@@ -275,6 +294,86 @@ void http_stream_on_read_http_parser(uv_stream_t* tcp, ssize_t nread, const uv_b
         uv_close((uv_handle_t*) &connection->stream, http_stream_on_close);
     }
     free(buf->base);
+}
+
+void http_stream_on_read_pico(uv_stream_t* tcp, ssize_t nread, const uv_buf_t* buf)
+{
+    http_connection* connection = (http_connection*)tcp->data;
+    
+    // TODO: nread == 0 should mean the socket closed. We should handle this properly.
+    
+    if (nread == UV_EOF)
+    {
+        uv_close((uv_handle_t*) &connection->stream, http_stream_on_close);
+    }
+    else if (nread >= 0)
+    {
+        memcpy(&connection->request_buffer[connection->request_buffer_length], buf->base, nread);
+        connection->request_buffer_length += nread;
+        int counter = 0;
+        
+        while (connection->prevbuflen < connection->request_buffer_length)
+        {
+            counter++;
+            
+            int parsed;
+            char *method;
+            char *path;
+            int minor_version;
+            struct phr_header headers[100];
+            size_t method_len;
+            size_t path_len;
+            size_t num_headers;
+            num_headers = sizeof(headers) / sizeof(headers[0]);
+            
+            parsed = phr_parse_request(&connection->request_buffer[connection->prevbuflen], connection->request_buffer_length - connection->prevbuflen,
+                                       &method, &method_len, &path, &path_len, &minor_version, headers,
+                                       &num_headers, 0);
+            
+            if (parsed > 0)
+            {
+                // Successfully parsed the request.
+                connection->prevbuflen += parsed;
+                
+                connection->keep_alive = 1;
+                http_request* request = create_http_request(connection);
+                connection->request = request;
+                
+                connection->request->url->value = (char *)malloc(path_len + 1);
+                request->url->length = path_len;
+                strncpy(connection->request->url->value, path, path_len);
+                path[path_len] = 0x00;
+                
+                // TODO: Zero-copy headers parsed by pico. Need this PR to implement.
+                // https://github.com/kellabyte/Haywire/pull/79
+                
+                http_request_complete_request(connection);
+            }
+            else if (parsed == -1)
+            {
+                memmove(connection->request_buffer, &connection->request_buffer[connection->prevbuflen], connection->request_buffer_length - connection->prevbuflen);
+                connection->request_buffer_length = connection->request_buffer_length - connection->prevbuflen;
+                connection->prevbuflen = 0;
+                break;
+            }
+            else if (parsed == -2)
+            {
+                break;
+            }
+        }
+        
+        if (connection->prevbuflen == connection->request_buffer_length)
+        {
+            connection->request_buffer_length = 0;
+            connection->prevbuflen = 0;
+        }
+    }
+    else
+    {
+        uv_close((uv_handle_t*) &connection->stream, http_stream_on_close);
+    }
+    free(buf->base);
+    connection->prevbuflen = 0;
 }
 
 int http_server_write_response_single(hw_write_context* write_context, hw_string* response)

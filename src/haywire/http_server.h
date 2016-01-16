@@ -44,3 +44,4 @@ void http_stream_on_close(uv_handle_t* handle);
 int http_server_write_response_single(hw_write_context* write_context, hw_string* response);
 void http_server_after_write(uv_write_t* req, int status);
 void http_stream_on_read_http_parser(uv_stream_t* tcp, ssize_t nread, const uv_buf_t* buf);
+void http_stream_on_read_pico(uv_stream_t* tcp, ssize_t nread, const uv_buf_t* buf);

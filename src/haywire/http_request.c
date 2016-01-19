@@ -110,6 +110,7 @@ http_request* create_http_request(http_connection* connection)
 void free_http_request(http_request* request)
 {
     khash_t(hw_string_hashmap) *h = request->headers;
+
     hw_string* k;
     hw_string* v;
     kh_foreach(h, k, v,
@@ -117,8 +118,9 @@ void free_http_request(http_request* request)
         free((hw_string*)k);
         free((hw_string*)v);
     });
-    kh_destroy(hw_string_hashmap, request->headers);
-    free(request->url); 
+    kh_destroy(hw_string_hashmap, h);
+    
+    free(request->url);
     free(request->body);
     free(request);
     INCREMENT_STAT(stat_requests_destroyed_total);
@@ -328,9 +330,6 @@ int http_request_on_message_complete(http_parser* parser)
         http_request_reset_offsets(&connection->offsets);
     }
 
-    free_http_request(connection->request);
-    connection->request = NULL;
-    
     return 0;
 }
 

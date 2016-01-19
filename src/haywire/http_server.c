@@ -355,7 +355,9 @@ void http_server_after_write(uv_write_t* req, int status)
     hw_write_context* write_context = (hw_write_context*)req->data;
     uv_buf_t *resbuf = (uv_buf_t *)(req+1);
     
-    if (!write_context->connection->keep_alive)
+    http_connection* connection = write_context->connection;
+    
+    if (!connection->keep_alive)
     {
         printf("Closing connection.\n");
         uv_close((uv_handle_t*)req->handle, http_stream_on_close);
@@ -366,14 +368,18 @@ void http_server_after_write(uv_write_t* req, int status)
         write_context->callback(write_context->user_data);
     }
     
-    if (write_context->connection->keep_alive) {
-        http_request_reset_offsets(&write_context->connection->offsets);
+    if (connection->keep_alive) {
+        http_request_reset_offsets(&connection->offsets);
     }
     
-    free(write_context->connection->buffer);
-    write_context->connection->buffer = NULL;
-    write_context->connection->buffer_size = 0;
+    free_http_request(write_context->request);
     write_context->request = NULL;
+    
+    free(connection->buffer);
+    connection->buffer = NULL;
+    connection->buffer_size = 0;
+    connection->request = NULL;
+
     free(write_context);
     free(resbuf->base);
     free(req);

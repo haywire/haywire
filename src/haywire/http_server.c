@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <stdbool.h>
 #include "uv.h"
 #include "haywire.h"
 #include "hw_string.h"
@@ -33,6 +34,9 @@ uv_err_t err = uv_last_error(uv_loop); \
 UVERR(err, msg); \
 exit(1); \
 }
+
+
+#define MIN(x, y) (((x) < (y)) ? (x) : (y))
 
 KHASH_MAP_INIT_STR(string_hashmap, hw_route_entry*)
 
@@ -72,6 +76,7 @@ int hw_init_with_config(configuration* c)
     config->thread_count = c->thread_count;
     config->tcp_nodelay = c->tcp_nodelay;
     config->parser = dupstr(c->parser);
+    config->max_request_size = c->max_request_size;
 
     http_v1_0 = create_string("HTTP/1.0 ");
     http_v1_1 = create_string("HTTP/1.1 ");
@@ -97,12 +102,13 @@ int hw_init_from_config(char* configuration_filename)
 
 void print_configuration()
 {
-    printf("Address: %s\nPort: %d\nThreads: %d\nParser: %s\nTCP No Delay: %s\n",
+    printf("Address: %s\nPort: %d\nThreads: %d\nParser: %s\nTCP No Delay: %s\nMaximum request size: %d\n",
            config->http_listen_address,
            config->http_listen_port,
            config->thread_count,
            config->parser,
-           config->tcp_nodelay? "on": "off");
+           config->tcp_nodelay? "on": "off",
+           config->max_request_size);
 }
 
 http_connection* create_http_connection()
@@ -257,29 +263,26 @@ void http_stream_on_connect(uv_stream_t* stream, int status)
 void http_stream_on_alloc(uv_handle_t* client, size_t suggested_size, uv_buf_t* buf)
 {
     /* TODO: log when malloc/realloc set errno and kill the request */
-    
     http_connection* connection = (http_connection*)client->data;
     void* new_buffer;
     size_t new_size;
+    size_t suggested_size_capped = MIN(config->max_request_size, suggested_size);
     
     if (!connection->buffer) {
-        connection->buffer = malloc(suggested_size);
-        connection->buffer_size = suggested_size;
-        new_size = suggested_size;
+        connection->buffer = malloc(suggested_size_capped);
+        connection->buffer_size = suggested_size_capped;
+        new_size = suggested_size_capped;
         new_buffer = connection->buffer;
     } else if (connection->buffer_used * 2 < connection->buffer_size) {
-        /* ignoring suggested size unless we're above 50% usage, as suggested_size is the initial buffer size */
+        /* ignoring suggested size unless we're above 50% usage, as suggested_size_capped is the initial buffer size */
         new_size = connection->buffer_size - connection->buffer_used;
         new_buffer = connection->buffer + connection->buffer_used;
-    } else {
+    } else if (connection->buffer_size + suggested_size_capped <= config->max_request_size) {
         /* time to reallocate memory and re-point anything using the buffer */
-
-        /* TODO cap the maximum size of the buffer to a configurable value, to avoid a simple DoS attack caused by sending a huge payload */
         void* old_buffer = connection->buffer;
         
-        
-        connection->buffer = realloc(old_buffer, connection->buffer_size + suggested_size);
-        connection->buffer_size += suggested_size;
+        connection->buffer = realloc(old_buffer, connection->buffer_size + suggested_size_capped);
+        connection->buffer_size += suggested_size_capped;
         new_size = connection->buffer_size - connection->buffer_used;
     
         if (connection->buffer != old_buffer) {
@@ -290,6 +293,10 @@ void http_stream_on_alloc(uv_handle_t* client, size_t suggested_size, uv_buf_t* 
         }
     
         new_buffer = (void *) connection->buffer + connection->buffer_used;
+    } else {
+        /* maximum request size exceeded */
+        new_buffer = connection->buffer;
+        new_size = 0;
     }
     
     *buf = uv_buf_init(new_buffer, new_size);
@@ -314,6 +321,13 @@ void http_stream_on_read_http_parser(uv_stream_t* tcp, ssize_t nread, const uv_b
         {
             /* uv_close((uv_handle_t*) &client->handle, http_stream_on_close); */
         }
+    }
+    else if (nread == UV_ENOBUFS) {
+        if (connection->request) {
+            connection->request->size_exceeded = true;
+            http_request_on_message_complete(&connection->parser);
+        }
+        uv_close((uv_handle_t*) &connection->stream, http_stream_on_close);
     }
     else
     {

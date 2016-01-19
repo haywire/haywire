@@ -55,7 +55,7 @@ int hw_route_compare_method(hw_string* url, char* route)
         }
         else
         {
-            match = hw_strcmp(route_token.string, request_token.string);
+            match = hw_strcmp(&route_token.string, &request_token.string);
             if (!match)
             {
                 equal = 1;

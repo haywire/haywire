@@ -149,6 +149,7 @@ typedef struct
     int thread_count;
     char* parser;
     bool tcp_nodelay;
+    int max_request_size;
 } configuration;
     
 typedef struct
@@ -161,6 +162,7 @@ typedef struct
     void* headers;
     hw_string* body;
     size_t body_length;
+    bool size_exceeded;
 } http_request;
 
 typedef	void* hw_http_response;

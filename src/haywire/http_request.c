@@ -32,7 +32,6 @@ static kh_inline khint_t hw_string_hash_func(hw_string* s)
     return h;
 }
 
-
 #define hw_string_hash_equal(a, b) (hw_strcmp(a, b) == 0)
 
 KHASH_INIT(hw_string_hashmap, hw_string*,  hw_string*, 1, hw_string_hash_func, hw_string_hash_equal)
@@ -57,9 +56,14 @@ void hw_print_request_headers(http_request* request)
 
 void hw_print_body(http_request* request)
 {
-    char* body = strndup(request->body->value, request->body->length + 1);
-    printf("BODY: %s\n", body);
-    free(body);
+    if (request->body->length > 0) {
+        char* body = strndup(request->body->value, request->body->length + 1);
+        printf("BODY: %s\n", body);
+        free(body);
+    }
+    else {
+        printf("BODY is empty!\n");
+    }
 }
 
 void* get_header(http_request* request, hw_string* name)
@@ -246,7 +250,7 @@ hw_route_entry* get_route_callback(hw_string* url)
     return route_entry;
 }
 
-void get_404_response(http_request* request, http_response* response)
+void get_error_response(http_request* request, http_response* response, const char* error_code, const char* error_message)
 {
     hw_string status_code;
     hw_string content_type_name;
@@ -255,7 +259,8 @@ void get_404_response(http_request* request, http_response* response)
     hw_string keep_alive_name;
     hw_string keep_alive_value;
     
-    SETSTRING(status_code, HTTP_STATUS_404);
+    status_code.value = error_code;
+    status_code.length = strlen(error_code);
     hw_set_response_status_code(response, &status_code);
     
     SETSTRING(content_type_name, "Content-Type");
@@ -263,7 +268,8 @@ void get_404_response(http_request* request, http_response* response)
     SETSTRING(content_type_value, "text/html");
     hw_set_response_header(response, &content_type_name, &content_type_value);
     
-    SETSTRING(body, "404 Not Found");
+    body.value = error_message;
+    body.length = strlen(error_message);
     hw_set_body(response, &body);
     
     if (request->keep_alive)
@@ -279,28 +285,39 @@ void get_404_response(http_request* request, http_response* response)
     }
 }
 
+
 int http_request_on_message_complete(http_parser* parser)
 {
     http_connection* connection = (http_connection*)parser->data;
-    hw_route_entry* route_entry = get_route_callback(connection->request->url);
     hw_string* response_buffer;
     hw_write_context* write_context;
     hw_http_response* response = hw_create_http_response(connection);
+    char* error = NULL;
     
-    http_request_commit_offsets(connection->buffer, &connection->offsets, connection->request);
-    
-    if (route_entry != NULL)
-    {
-        route_entry->callback(connection->request, response, route_entry->user_data);
+    if (connection->request->size_exceeded) {
+        // 413 Request entity too large
+        error = HTTP_STATUS_413;
+    } else {
+        http_request_commit_offsets(connection->buffer, &connection->offsets, connection->request);
+        hw_route_entry* route_entry = connection->request != NULL ? get_route_callback(connection->request->url) : NULL;
+        
+        if (route_entry != NULL)
+        {
+            route_entry->callback(connection->request, response, route_entry->user_data);
+        }
+        else
+        {
+            // 404 Not Found.
+            error = HTTP_STATUS_404;
+        }
     }
-    else
-    {
-        // 404 Not Found.
+    
+    if (error) {
         write_context = malloc(sizeof(hw_write_context));
         write_context->connection = connection;
         write_context->request = connection->request;
         write_context->callback = 0;
-        get_404_response(connection->request, (http_response*)response);
+        get_error_response(connection->request, (http_response*)response, error, error);
         response_buffer = create_response_buffer(response);
         http_server_write_response(write_context, response_buffer);
         free(response_buffer);

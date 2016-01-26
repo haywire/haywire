@@ -162,7 +162,7 @@ typedef struct
     void* headers;
     hw_string* body;
     int body_length;
-    clock_t start_t;
+    clock_t begin_time;
 } http_request;
 
 typedef	void* hw_http_response;

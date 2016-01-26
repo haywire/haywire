@@ -145,12 +145,13 @@ typedef struct
 typedef struct
 {
     char* http_listen_address;
-    int http_listen_port;
-    int thread_count;
+    unsigned int http_listen_port;
+    unsigned int thread_count;
     char* parser;
     bool tcp_nodelay;
+    unsigned int max_request_size;
 } configuration;
-
+    
 typedef struct
 {
     unsigned short http_major;
@@ -160,7 +161,8 @@ typedef struct
     hw_string* url;
     void* headers;
     hw_string* body;
-    int body_length;
+    size_t body_length;
+    bool size_exceeded;
 } http_request;
 
 typedef	void* hw_http_response;

@@ -82,7 +82,7 @@ hw_string* create_response_buffer(hw_http_response* response)
     int line_sep_size = sizeof(CRLF);
 
     int header_buffer_incr = 512;
-    int body_size = resp->body.length + line_sep_size;
+    int body_size = resp->body.length;
     int header_size_remaining = header_buffer_incr;
     int response_size = header_size_remaining + sizeof(length_header) + num_chars(resp->body.length) + 2 * line_sep_size + body_size + line_sep_size;
 
@@ -112,14 +112,22 @@ hw_string* create_response_buffer(hw_http_response* response)
     APPENDSTRING(response_string, length_header);
 
     string_from_int(&content_length, body_size, 10);
-    append_string(response_string, &content_length);
+    
+    if (body_size > 0) {
+        append_string(response_string, &content_length);
+    }
+    else {
+        hw_string zero_content;
+        zero_content.value = "0";
+        zero_content.length = 1;
+        append_string(response_string, &zero_content);
+    }
+    
     APPENDSTRING(response_string, CRLF CRLF);
     
-    if (resp->body.length > 0)
+    if (body_size > 0)
     {
         append_string(response_string, &resp->body);
     }
-    APPENDSTRING(response_string, CRLF);
-    response_string->value[response_string->length] = '\0';
     return response_string;
 }

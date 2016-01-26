@@ -51,13 +51,6 @@ uv_async_t* listener_async_handles;
 uv_loop_t* listener_event_loops;
 uv_barrier_t* listeners_created_barrier;
 
-void signal_handler(int signal)
-{
-    // TODO: We should clean up initialization leak gracefully.
-    // https://github.com/haywire/Haywire/pull/83
-    exit(EXIT_SUCCESS);
-}
-
 int hw_init_with_config(configuration* c)
 {
     int http_listen_address_length;
@@ -174,7 +167,6 @@ int hw_http_open()
     
 #ifdef UNIX
     signal(SIGPIPE, SIG_IGN);
-    signal(SIGINT, signal_handler);
 #endif // UNIX
     
     listener_count = threads;

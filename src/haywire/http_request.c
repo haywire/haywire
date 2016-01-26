@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <time.h>
 #include "haywire.h"
 #include "hw_string.h"
 #include "khash.h"
@@ -101,6 +102,7 @@ http_request* create_http_request(http_connection* connection)
     request->body = malloc(sizeof(hw_string));
     request->body->value = NULL;
     request->body->length = 0;
+    request->start_time = clock();
     INCREMENT_STAT(stat_requests_created_total);
     return request;
 }

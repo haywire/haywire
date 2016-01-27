@@ -102,8 +102,9 @@ http_request* create_http_request(http_connection* connection)
     request->body->value = NULL;
     request->body->length = 0;
 #ifdef __linux__
-    request->start_time = malloc(sizeof(struct timespec));
-    clock_gettime(CLOCK_REALTIME, request->start_time);
+    struct timeval t;
+    gettimeofday(&t, NULL);
+    request->start_time_micros = (t.tv_sec * 1000000) + t.tv_usec;
 #endif
     INCREMENT_STAT(stat_requests_created_total);
     return request;
@@ -127,9 +128,6 @@ void free_http_request(http_request* request)
     }
     free(request->url); 
     free(request->body);
-#ifdef __linux__
-    free(request->start_time);
-#endif
     free(request);
     INCREMENT_STAT(stat_requests_destroyed_total);
 }

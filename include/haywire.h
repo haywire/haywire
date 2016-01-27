@@ -163,7 +163,7 @@ typedef struct
     hw_string* body;
     int body_length;
 #ifdef __linux__
-    struct timespec* start_time;
+    long start_time_micros;
 #endif
 } http_request;
 

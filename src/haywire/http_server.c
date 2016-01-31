@@ -64,6 +64,7 @@ int hw_init_with_config(configuration* c)
     config->http_listen_address = dupstr(c->http_listen_address);
     config->http_listen_port = c->http_listen_port;
     config->thread_count = c->thread_count;
+    config->tcp_nodelay = c->tcp_nodelay;
     config->parser = dupstr(c->parser);
     config->response_batch_size = c->response_batch_size;
 
@@ -103,11 +104,12 @@ int hw_init_from_config(char* configuration_filename)
 
 void print_configuration()
 {
-    printf("Address: %s\nPort: %d\nThreads: %d\nParser: %s\nResponse batch size: %d\n",
+    printf("Address: %s\nPort: %d\nThreads: %d\nParser: %s\nTCP No Delay: %s\nResponse batch size: %d\n",
            config->http_listen_address,
            config->http_listen_port,
            config->thread_count,
            config->parser,
+           config->tcp_nodelay? "on": "off",
            config->response_batch_size);
 }
 
@@ -214,6 +216,9 @@ int hw_http_open()
         
         uv_ip4_addr(config->http_listen_address, config->http_listen_port, &listen_address);
         uv_tcp_bind(&server, (const struct sockaddr*)&listen_address, 0);
+        if (config->tcp_nodelay) {
+            uv_tcp_nodelay(&server, 1);
+        }
         uv_listen((uv_stream_t*)&server, 128, http_stream_on_connect);
         print_configuration();
         printf("Listening...\n");
@@ -240,7 +245,7 @@ int hw_http_open()
         uv_barrier_wait(listeners_created_barrier);
         initialize_http_request_cache();
         
-        start_connection_dispatching(UV_TCP, threads, servers, config->http_listen_address, config->http_listen_port);
+        start_connection_dispatching(UV_TCP, threads, servers, config->http_listen_address, config->http_listen_port, config->tcp_nodelay);
     }
     
     return 0;

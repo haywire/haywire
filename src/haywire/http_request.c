@@ -13,6 +13,8 @@
 #include "server_stats.h"
 #include "route_compare_method.h"
 
+extern char* uv__strndup(const char* s, size_t n);
+
 #define CRLF "\r\n"
 static const char response_404[] =
   "HTTP/1.1 404 Not Found" CRLF
@@ -44,8 +46,8 @@ void hw_print_request_headers(http_request* request)
 
     khash_t(hw_string_hashmap) *h = request->headers;
     kh_foreach(h, k, v, {
-        char* key = strndup(k->value, k->length + 1);
-        char* value = strndup(v->value, v->length + 1);
+        char* key = uv__strndup(k->value, k->length + 1);
+        char* value = uv__strndup(v->value, v->length + 1);
         printf("KEY: %s VALUE: %s\n", key, value);
         free(key);
         free(value);
@@ -54,7 +56,7 @@ void hw_print_request_headers(http_request* request)
 
 void hw_print_body(http_request* request)
 {
-    char* body = strndup(request->body->value, request->body->length + 1);
+    char* body = uv__strndup(request->body->value, request->body->length + 1);
     printf("BODY: %s\n", body);
     free(body);
 }

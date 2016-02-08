@@ -9,4 +9,4 @@ struct ipc_peer_ctx
     uv_write_t write_req;
 };
 
-void start_connection_dispatching(uv_handle_type type, unsigned int num_servers, struct server_ctx* servers, char* listen_address, int listen_port, bool tcp_nodelay);
+void start_connection_dispatching(uv_handle_type type, unsigned int num_servers, struct server_ctx* servers, char* listen_address, int listen_port, bool tcp_nodelay, int listen_backlog);

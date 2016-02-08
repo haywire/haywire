@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <haywire.h>
 #include <stdbool.h>
 #include "uv.h"
 #include "haywire.h"
@@ -68,6 +69,7 @@ int hw_init_with_config(configuration* c)
     config->http_listen_port = c->http_listen_port;
     config->thread_count = c->thread_count;
     config->tcp_nodelay = c->tcp_nodelay;
+    config->listen_backlog = c->listen_backlog? c->listen_backlog : SOMAXCONN;
     config->parser = dupstr(c->parser);
     config->max_request_size = c->max_request_size;
 
@@ -95,13 +97,14 @@ int hw_init_from_config(char* configuration_filename)
 
 void print_configuration()
 {
-    printf("Address: %s\nPort: %d\nThreads: %d\nParser: %s\nTCP No Delay: %s\nMaximum request size: %d\n",
+    printf("Address: %s\nPort: %d\nThreads: %d\nParser: %s\nTCP No Delay: %s\nMaximum request size: %d\nListen backlog: %d\\n",
            config->http_listen_address,
            config->http_listen_port,
            config->thread_count,
            config->parser,
            config->tcp_nodelay? "on": "off",
-           config->max_request_size);
+           config->max_request_size,
+           config->listen_backlog);
 }
 
 http_connection* create_http_connection()
@@ -206,7 +209,7 @@ int hw_http_open()
             uv_tcp_nodelay(&server, 1);
         }
         
-        uv_listen((uv_stream_t*)&server, 128, http_stream_on_connect);
+        uv_listen((uv_stream_t*)&server, config->listen_backlog, http_stream_on_connect);
         print_configuration();
         printf("Listening...\n");
         uv_run(uv_loop, UV_RUN_DEFAULT);
@@ -232,7 +235,7 @@ int hw_http_open()
         uv_barrier_wait(listeners_created_barrier);
         initialize_http_request_cache();
         
-        start_connection_dispatching(UV_TCP, threads, servers, config->http_listen_address, config->http_listen_port, config->tcp_nodelay);
+        start_connection_dispatching(UV_TCP, threads, servers, config->http_listen_address, config->http_listen_port, config->tcp_nodelay, config->listen_backlog);
     }
     
     return 0;
@@ -259,7 +262,7 @@ void http_stream_on_alloc(uv_handle_t* client, size_t suggested_size, uv_buf_t* 
     void* new_buffer;
     size_t new_size;
     size_t suggested_size_capped = MIN(config->max_request_size, suggested_size);
-    
+
     if (!connection->buffer) {
         connection->buffer = malloc(suggested_size_capped);
         connection->buffer_size = suggested_size_capped;
@@ -272,25 +275,25 @@ void http_stream_on_alloc(uv_handle_t* client, size_t suggested_size, uv_buf_t* 
     } else if (connection->buffer_size + suggested_size_capped <= config->max_request_size) {
         /* time to reallocate memory and re-point anything using the buffer */
         void* old_buffer = connection->buffer;
-        
+
         connection->buffer = realloc(old_buffer, connection->buffer_size + suggested_size_capped);
         connection->buffer_size += suggested_size_capped;
         new_size = connection->buffer_size - connection->buffer_used;
-    
+
         if (connection->buffer != old_buffer) {
             http_request_update_offsets(old_buffer, connection->buffer, &connection->offsets, connection->request);
-            
+
             connection->current_header_key.value = (hw_string*) ((void*) connection->current_header_key.value - old_buffer + connection->buffer);
             connection->current_header_value.value = (hw_string*) ((void*) connection->current_header_value.value - old_buffer + connection->buffer);
         }
-    
+
         new_buffer = (void *) connection->buffer + connection->buffer_used;
     } else {
         /* maximum request size exceeded */
         new_buffer = connection->buffer;
         new_size = 0;
     }
-    
+
     *buf = uv_buf_init(new_buffer, new_size);
 }
 
@@ -348,7 +351,7 @@ void http_server_after_write(uv_write_t* req, int status)
     uv_buf_t *resbuf = (uv_buf_t *)(req+1);
     
     http_connection* connection = write_context->connection;
-    
+
     if (!connection->keep_alive)
     {
         printf("Closing connection.\n");
@@ -363,10 +366,10 @@ void http_server_after_write(uv_write_t* req, int status)
     if (connection->keep_alive) {
         http_request_reset_offsets(&connection->offsets);
     }
-    
+
     free_http_request(write_context->request);
     write_context->request = NULL;
-    
+
     free(connection->buffer);
     connection->buffer = NULL;
     connection->buffer_size = 0;

@@ -59,7 +59,7 @@ void ipc_connection_cb(uv_stream_t* ipc_pipe, int status)
  * threads. It's kind of cumbersome for such a simple operation, maybe we
  * should revive uv_import() and uv_export().
  */
-void start_connection_dispatching(uv_handle_type type, unsigned int num_servers, struct server_ctx* servers, char* listen_address, int listen_port, bool tcp_nodelay)
+void start_connection_dispatching(uv_handle_type type, unsigned int num_servers, struct server_ctx* servers, char* listen_address, int listen_port, bool tcp_nodelay, int listen_backlog)
 {
     int rc;
     struct ipc_server_ctx ctx;
@@ -87,7 +87,7 @@ void start_connection_dispatching(uv_handle_type type, unsigned int num_servers,
     
     rc = uv_pipe_init(loop, &ctx.ipc_pipe, 1);
     rc = uv_pipe_bind(&ctx.ipc_pipe, "HAYWIRE_CONNECTION_DISPATCH_PIPE_NAME");
-    rc = uv_listen((uv_stream_t*) &ctx.ipc_pipe, 128, ipc_connection_cb);
+    rc = uv_listen((uv_stream_t*) &ctx.ipc_pipe, listen_backlog, ipc_connection_cb);
     
     for (i = 0; i < num_servers; i++)
         uv_sem_post(&servers[i].semaphore);

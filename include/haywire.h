@@ -145,10 +145,11 @@ typedef struct
 typedef struct
 {
     char* http_listen_address;
-    int http_listen_port;
-    int thread_count;
+    unsigned int http_listen_port;
+    unsigned int thread_count;
     char* parser;
     bool tcp_nodelay;
+    unsigned int listen_backlog;
 } configuration;
 
 typedef struct

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <haywire.h>
 #include "opt.h"
 #include "haywire.h"
 
@@ -65,6 +66,7 @@ int main(int args, char** argsv)
     opt_flag_int(conf, &config.thread_count, "threads", 0, "Number of threads to use.");
     opt_flag_string(conf, &config.parser, "parser", "http_parser", "HTTP parser to use");
     opt_flag_bool(conf, &config.tcp_nodelay, "tcp_nodelay", "If present, enables tcp_nodelay (i.e. disables Nagle's algorithm).");
+    opt_flag_int(conf, &config.listen_backlog, "listen_backlog", 0, "Maximum size of the backlog when accepting connection. Defaults to SOMAXCONN.");
     args = opt_config_parse(conf, args, argsv);
 
     hw_init_with_config(&config);

@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <haywire.h>
 #include "uv.h"
 #include "haywire.h"
 #include "hw_string.h"
@@ -64,6 +65,7 @@ int hw_init_with_config(configuration* c)
     config->http_listen_port = c->http_listen_port;
     config->thread_count = c->thread_count;
     config->tcp_nodelay = c->tcp_nodelay;
+    config->listen_backlog = c->listen_backlog? c->listen_backlog : SOMAXCONN;
     config->parser = dupstr(c->parser);
 
     http_v1_0 = create_string("HTTP/1.0 ");
@@ -90,12 +92,13 @@ int hw_init_from_config(char* configuration_filename)
 
 void print_configuration()
 {
-    printf("Address: %s\nPort: %d\nThreads: %d\nParser: %s\nTCP No Delay: %s\n",
+    printf("Address: %s\nPort: %d\nThreads: %d\nParser: %s\nTCP No Delay: %s\nListen backlog: %d\n",
            config->http_listen_address,
            config->http_listen_port,
            config->thread_count,
            config->parser,
-           config->tcp_nodelay? "on": "off");
+           config->tcp_nodelay? "on": "off",
+           config->listen_backlog);
 }
 
 http_connection* create_http_connection()
@@ -199,7 +202,7 @@ int hw_http_open()
             uv_tcp_nodelay(&server, 1);
         }
         
-        uv_listen((uv_stream_t*)&server, 128, http_stream_on_connect);
+        uv_listen((uv_stream_t*)&server, config->listen_backlog, http_stream_on_connect);
         print_configuration();
         printf("Listening...\n");
         uv_run(uv_loop, UV_RUN_DEFAULT);
@@ -225,7 +228,7 @@ int hw_http_open()
         uv_barrier_wait(listeners_created_barrier);
         initialize_http_request_cache();
         
-        start_connection_dispatching(UV_TCP, threads, servers, config->http_listen_address, config->http_listen_port, config->tcp_nodelay);
+        start_connection_dispatching(UV_TCP, threads, servers, config->http_listen_address, config->http_listen_port, config->tcp_nodelay, config->listen_backlog);
     }
     
     return 0;

@@ -27,6 +27,7 @@ struct server_ctx
     uv_thread_t thread_id;
     uv_sem_t semaphore;
     bool tcp_nodelay;
+    unsigned int listen_backlog;
 };
 
 struct ipc_client_ctx

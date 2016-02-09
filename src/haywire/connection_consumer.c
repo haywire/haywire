@@ -121,7 +121,7 @@ void connection_consumer_start(void *arg)
     get_listen_handle(loop, (uv_stream_t*) &ctx->server_handle);
     uv_sem_post(&ctx->semaphore);
     
-    rc = uv_listen((uv_stream_t*)&ctx->server_handle, 128, connection_consumer_new_connection);
+    rc = uv_listen((uv_stream_t*)&ctx->server_handle, ctx->listen_backlog, connection_consumer_new_connection);
     rc = uv_run(loop, UV_RUN_DEFAULT);
     
     uv_loop_delete(loop);

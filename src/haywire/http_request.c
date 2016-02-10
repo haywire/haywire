@@ -142,8 +142,12 @@ int http_request_on_message_begin(http_parser* parser)
 int http_request_on_url(http_parser *parser, const char *at, size_t length)
 {
     http_connection* connection = (http_connection*)parser->data;
-    connection->request->url->value = at;
-    connection->request->url->length = length;
+    if (connection->request->url->length) {
+        connection->request->url->length += length;
+    } else {
+        connection->request->url->value = at;
+        connection->request->url->length = length;
+    }
     
     return 0;
 }

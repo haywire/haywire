@@ -27,7 +27,7 @@ int hw_strcmp(hw_string* a, hw_string* b) {
 
 void append_string(hw_string* destination, hw_string* source)
 {
-    void* location = (char*)destination->value + destination->length;
+    void* location = (void*) (destination->value + destination->length);
     memcpy(location, source->value, source->length);
     destination->length += source->length;
 }

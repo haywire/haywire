@@ -55,6 +55,7 @@ void ipc_connection_cb(uv_stream_t* ipc_pipe, int status)
         uv_close((uv_handle_t*) ipc_pipe, NULL);
 }
 
+extern void print_configuration();
 /* Set up an IPC pipe server that hands out listen sockets to the worker
  * threads. It's kind of cumbersome for such a simple operation, maybe we
  * should revive uv_import() and uv_export().

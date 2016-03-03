@@ -6,6 +6,7 @@ extern "C" {
 
 #include <stdio.h>
 #include <stdbool.h>
+#include <time.h>
 
 #ifdef _WIN32
     /* Windows - set up dll import/export decorators. */
@@ -162,6 +163,9 @@ typedef struct
     void* headers;
     hw_string* body;
     int body_length;
+#ifdef __linux__
+    long start_time_micros;
+#endif
 } http_request;
 
 typedef	void* hw_http_response;

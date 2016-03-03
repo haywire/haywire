@@ -103,6 +103,11 @@ http_request* create_http_request(http_connection* connection)
     request->body = malloc(sizeof(hw_string));
     request->body->value = NULL;
     request->body->length = 0;
+#ifdef __linux__
+    struct timeval t;
+    gettimeofday(&t, NULL);
+    request->start_time_micros = (t.tv_sec * 1000000) + t.tv_usec;
+#endif
     INCREMENT_STAT(stat_requests_created_total);
     return request;
 }

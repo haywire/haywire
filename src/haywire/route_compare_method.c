@@ -11,11 +11,12 @@ typedef struct hw_route_token_st {
 } hw_route_token;
 
 void hw_route_next_token(hw_string* url, int start, hw_route_token* result) {
+	int end;
     while (start < url->length && (url->value[start] == '/')) {
         start++;
     }
     
-    int end = start;
+    end = start;
     
     while (end < url->length && url->value[end] != '/') {
         end++;
@@ -36,15 +37,15 @@ void hw_route_next_token(hw_string* url, int start, hw_route_token* result) {
 int hw_route_compare_method(hw_string* url, char* route)
 {
     int equal = 0;
-    int match = 0;
+	int match = 0;
+	hw_string hw_route;
+	hw_route_token route_token;
+	hw_route_token request_token;
     
     // TODO route should probably be a hw_string* too
-    hw_string hw_route;
     hw_route.value = route;
     hw_route.length = strlen(route);
     
-    hw_route_token route_token;
-    hw_route_token request_token;
 
     hw_route_next_token(url, 0, &request_token);
     hw_route_next_token(&hw_route, 0, &route_token);

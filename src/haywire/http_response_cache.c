@@ -66,6 +66,9 @@ void free_http_request_cache(khash_t(string_hashmap)* http_request_cache)
 
 void create_cached_http_request(khash_t(string_hashmap)* http_request_cache, char* http_status)
 {
+	time_t curtime;
+	char* current_time;
+	hw_string current_datetime;
     hw_string* cache_entry = malloc(sizeof(hw_string));
     cache_entry->value = calloc(1024, 1);
     cache_entry->length = 0;
@@ -77,10 +80,8 @@ void create_cached_http_request(khash_t(string_hashmap)* http_request_cache, cha
     APPENDSTRING(cache_entry, CRLF);
 
     // Add the current time.
-    time_t curtime;
     time(&curtime);
-    char* current_time = ctime(&curtime);
-    hw_string current_datetime;
+    current_time = ctime(&curtime);
     current_datetime.value = current_time;
     current_datetime.length = strlen(current_time);
     APPENDSTRING(cache_entry, "Date: ");

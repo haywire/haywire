@@ -30,7 +30,8 @@ static const char response_404[] =
 static kh_inline khint_t hw_string_hash_func(hw_string* s)
 {
     khint_t h = s->length > 0 ? (khint_t)*s->value : 0;
-    if (h) for (int i = 0; i < s->length; i++) h = (h << 5) - h + (khint_t)*(s->value + i);
+	int i;
+    if (h) for (i = 0; i < s->length; i++) h = (h << 5) - h + (khint_t)*(s->value + i);
     return h;
 }
 

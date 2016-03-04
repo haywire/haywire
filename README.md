@@ -31,14 +31,14 @@ Haywire uses `gyp` which supports generating make type builds or Visual Studio a
     git clone https://github.com/kellabyte/Haywire.git
 
 ### Compiling on Linux
-    ./compile_dependencies.sh
-    ./compile_make.sh
+    ./make.sh
     
 ### Compiling on Mac OSX
-    ./compile_dependencies.sh
-    ./compile_xcode.sh
+    ./make.sh
 
 ### Compiling on Windows
+These instructions are old but may still work. We need to make Windows support in `make.sh`.
+
 Open the Developer Command Prompt for Visual Studio
 
     build.bat

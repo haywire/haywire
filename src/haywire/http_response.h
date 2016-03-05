@@ -1,3 +1,4 @@
+#pragma once
 #include "haywire.h"
 #include "http_connection.h"
 
@@ -11,6 +12,7 @@ typedef struct
 typedef struct
 {
     http_connection* connection;
+    http_request* request;
     unsigned short http_major;
     unsigned short http_minor;
     hw_string status_code;
@@ -19,6 +21,14 @@ typedef struct
     hw_string body;
     int sent;
 } http_response;
+
+typedef struct
+{
+    http_connection* connection;
+    http_request* request;
+    void* user_data;
+    http_response_complete_callback callback;
+} hw_write_context;
 
 hw_http_response hw_create_http_response(http_connection* connection);
 hw_string* create_response_buffer(hw_http_response* response);

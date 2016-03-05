@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include <haywire.h>
 #include "uv.h"
 #include "haywire.h"
 #include "hw_string.h"
@@ -18,9 +19,9 @@ static uv_key_t thread_cache_key;
 void initialize_http_request_cache();
 void free_http_request_cache();
 void http_request_cache_timer(uv_timer_t* handle);
-void create_cached_http_request(khash_t(string_hashmap)* http_request_cache, char* http_status);
+void create_cached_http_request(khash_t(string_hashmap)* http_request_cache, const char* http_status);
 void set_cached_request(khash_t(string_hashmap)* http_request_cache, char* http_status, hw_string* cache_entry);
-hw_string* get_cached_request(char* http_status);
+hw_string* get_cached_request(const char* http_status);
 
 void initialize_http_request_cache()
 {
@@ -64,14 +65,17 @@ void free_http_request_cache(khash_t(string_hashmap)* http_request_cache)
     uv_key_set(&thread_cache_key, NULL);
 }
 
-void create_cached_http_request(khash_t(string_hashmap)* http_request_cache, char* http_status)
+void create_cached_http_request(khash_t(string_hashmap)* http_request_cache, const char* http_status)
 {
     hw_string* cache_entry = malloc(sizeof(hw_string));
     cache_entry->value = calloc(1024, 1);
     cache_entry->length = 0;
+    hw_string status;
+    status.length = strlen(http_status);
+    status.value = http_status;
     
     append_string(cache_entry, http_v1_1);
-    APPENDSTRING(cache_entry, http_status);
+    append_string(cache_entry, &status);
     APPENDSTRING(cache_entry, CRLF);
     append_string(cache_entry, server_name);
     APPENDSTRING(cache_entry, CRLF);
@@ -85,80 +89,64 @@ void create_cached_http_request(khash_t(string_hashmap)* http_request_cache, cha
     current_datetime.length = strlen(current_time);
     APPENDSTRING(cache_entry, "Date: ");
     append_string(cache_entry, &current_datetime);
-    
+
     set_cached_request(http_request_cache, http_status, cache_entry);
 }
 
 void set_cached_request(khash_t(string_hashmap)* http_request_cache, char* http_status, hw_string* cache_entry)
 {
     int ret;
-    int is_missing;
     khiter_t key;
-    hw_string* val;
-    
+
     key = kh_get(string_hashmap, http_request_cache, http_status);
-    if (key != 0)
+    if (key == kh_end(http_request_cache))
     {
-        /* cache entry already exists and another thread beat us. Ignore. */
-        val = kh_value(http_request_cache, key);
-        is_missing = (key == kh_end(http_request_cache));
-        
-        if (!is_missing)
-        {
-            printf("FOUND\n");
-            //kh_del(string_hashmap, http_request_cache, key);
-        }
+        key = kh_put(string_hashmap, http_request_cache, dupstr(http_status), &ret);
+        kh_value(http_request_cache, key) = cache_entry;
     }
-    
-    key = kh_put(string_hashmap, http_request_cache, dupstr(http_status), &ret);
-    kh_value(http_request_cache, key) = cache_entry;
 }
 
-hw_string* get_cached_request(char* http_status)
+hw_string* get_cached_request(const char* http_status)
 {
-    int is_missing;
+    int is_missing = 0;
     void* val;
     khash_t(string_hashmap)* http_request_cache;
     khiter_t key = 0;
-    
+
     /* This thread hasn't created a response cache so create one */
     http_request_cache = uv_key_get(&thread_cache_key);
     if (http_request_cache == NULL)
     {
         http_request_cache = kh_init(string_hashmap);
         uv_key_set(&thread_cache_key, http_request_cache);
-        //printf("CREATED CACHE\n");
     }
     
     key = kh_get(string_hashmap, http_request_cache, http_status);
-    if (key == 0)
-    {
-        is_missing = 1;
-    }
-    else
-    {
-        val = kh_value(http_request_cache, key);
-        is_missing = (key == kh_end(http_request_cache));
-    }
-    if (is_missing)
+    if (key == kh_end(http_request_cache))
     {
         create_cached_http_request(http_request_cache, http_status);
     }
+    else
+    {
+        val = kh_value(http_request_cache, key);
+    }
     
     key = kh_get(string_hashmap, http_request_cache, http_status);
-    if (key == 0)
+    if (key == kh_end(http_request_cache))
     {
         is_missing = 1;
     }
     else
     {
         val = kh_value(http_request_cache, key);
-        is_missing = (key == kh_end(http_request_cache));
+        is_missing = 0;
     }
+
     if (is_missing)
     {
         return NULL;
     }
+
     return val;
 }
 

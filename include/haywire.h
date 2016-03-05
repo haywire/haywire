@@ -136,6 +136,8 @@ enum hw_http_method
 #define SETSTRING(s,val) s.value=val; s.length=STRLENOF(val)
 #define APPENDSTRING(s,val) memcpy((char*)s->value + s->length, val, STRLENOF(val)); s->length+=STRLENOF(val)
 
+typedef	void* hw_http_response;
+
 typedef struct
 {
     char* value;
@@ -150,8 +152,9 @@ typedef struct
     char* parser;
     bool tcp_nodelay;
     unsigned int listen_backlog;
+    unsigned int max_request_size;
 } configuration;
-
+    
 typedef struct
 {
     unsigned short http_major;
@@ -161,10 +164,9 @@ typedef struct
     hw_string* url;
     void* headers;
     hw_string* body;
-    int body_length;
+    size_t body_length;
+    enum {OK, SIZE_EXCEEDED, BAD_REQUEST, INTERNAL_ERROR} state;
 } http_request;
-
-typedef	void* hw_http_response;
 
 typedef void (HAYWIRE_CALLING_CONVENTION *http_request_callback)(http_request* request, hw_http_response* response, void* user_data);
 typedef void (HAYWIRE_CALLING_CONVENTION *http_response_complete_callback)(void* user_data);

@@ -1,3 +1,5 @@
+#include <stddef.h>
+
 #pragma once
 #include "uv.h"
 #include "http_parser.h"

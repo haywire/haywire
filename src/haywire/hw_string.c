@@ -22,12 +22,28 @@ hw_string* hw_strdup(hw_string* tocopy)
 }
 
 int hw_strcmp(hw_string* a, hw_string* b) {
-    return strncmp(a->value, b->value, a->length > b->length ? a->length : b->length);
+    int ret;
+    
+    if (a->length > b->length) {
+        ret = strncmp(a->value, b->value, b->length);
+        if (!ret) {
+            ret = 1;
+        }
+    } else if (a->length == b->length) {
+        ret = strncmp(a->value, b->value, a->length);
+    } else {
+        ret = strncmp(a->value, b->value, a->length);
+        if (!ret) {
+            ret = -1;
+        }
+    }
+    
+    return ret;
 }
 
 void append_string(hw_string* destination, hw_string* source)
 {
-    void* location = (char*)destination->value + destination->length;
+    void* location = (void*) (destination->value + destination->length);
     memcpy(location, source->value, source->length);
     destination->length += source->length;
 }

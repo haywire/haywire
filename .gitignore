@@ -35,4 +35,9 @@ build/
 
 # Lazily-resolved dependencies
 lib/
+
+# Xcode
+Haywire.xcworkspace/
+
+# CLion
 .idea

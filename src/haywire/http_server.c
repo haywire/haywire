@@ -394,6 +394,11 @@ void http_stream_on_read_pico(uv_stream_t* tcp, ssize_t nread, const uv_buf_t* b
         // TODO: Should this be at a higher level? Both parsers call this the same way.
         http_request_buffer_consume(connection->buffer, nread);
 
+        //printf("BEGIN ----------------------------------------\n");
+        //printf("NREAD: %d PREVBUFLEN: %d\n", nread, connection->prevbuflen);
+        //fwrite(http_request_buffer_get_buffer(connection->buffer),
+        //       http_request_buffer_get_used(connection->buffer), 1, stdout);
+
         while (connection->prevbuflen < http_request_buffer_get_used(connection->buffer))
         {
             int parsed;
@@ -433,24 +438,27 @@ void http_stream_on_read_pico(uv_stream_t* tcp, ssize_t nread, const uv_buf_t* b
 
                 // Send response.
                 http_request_complete_request(connection);
-
-                printf("request is %d bytes long\n", parsed);
-                printf("method is %.*s\n", (int)method_len, method);
-                printf("path is %.*s\n", (int)path_len, path);
-                printf("HTTP version is 1.%d\n", minor_version);
-                printf("headers:\n");
-                for (int i = 0; i != num_headers; ++i) {
-                    printf("%.*s: %.*s\n", (int)headers[i].name_len, headers[i].name,
-                           (int)headers[i].value_len, headers[i].value);
-                }
-
                 http_request_buffer_mark(connection->buffer);
                 http_request_buffer_sweep(connection->buffer);
+                connection->prevbuflen = http_request_buffer_get_used(connection->buffer);
+
+//                printf("request is %d bytes long\n", parsed);
+//                printf("method is %.*s\n", (int)method_len, method);
+//                printf("path is %.*s\n", (int)path_len, path);
+//                printf("HTTP version is 1.%d\n", minor_version);
+//                printf("headers:\n");
+//                for (int i = 0; i != num_headers; ++i) {
+//                    printf("%.*s: %.*s\n", (int)headers[i].name_len, headers[i].name,
+//                           (int)headers[i].value_len, headers[i].value);
+//                }
+                //printf("RESPONDED\n");
+
+                //printf("END ------------------------------------------\n");
             }
             else if (parsed == -1)
             {
                 /* Request is incomplete so keep reading and parsing. */
-                connection->prevbuflen = 0;
+                //connection->prevbuflen = 0;
                 break;
             }
             else if (parsed == -2)
@@ -459,9 +467,9 @@ void http_stream_on_read_pico(uv_stream_t* tcp, ssize_t nread, const uv_buf_t* b
             }
         }
 
-        if (connection->prevbuflen == http_request_buffer_get_used(connection->buffer)) {
-            connection->prevbuflen = 0;
-        }
+        //if (connection->prevbuflen == http_request_buffer_get_used(connection->buffer)) {
+        //    connection->prevbuflen = 0;
+        //}
     } else if (nread == 0) {
         /* no-op - there's no data to be read, but there might be later */
     }
@@ -481,7 +489,6 @@ void http_stream_on_read_pico(uv_stream_t* tcp, ssize_t nread, const uv_buf_t* b
          * respond with a blanket 500 error if we can */
         handle_internal_error(connection);
     }
-    connection->prevbuflen = 0;
 }
 
 void http_server_cleanup_write(char* response_string, hw_write_context* write_context, uv_write_t* write_req)

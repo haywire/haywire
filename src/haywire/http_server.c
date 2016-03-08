@@ -394,7 +394,6 @@ void http_stream_on_read_pico(uv_stream_t* tcp, ssize_t nread, const uv_buf_t* b
         // TODO: Should this be at a higher level? Both parsers call this the same way.
         http_request_buffer_consume(connection->buffer, nread);
 
-        //printf("BEGIN ----------------------------------------\n");
         printf("START\tNREAD: %d BUFUSED: %d PREVBUFLEN: %d\n",
                nread,
                http_request_buffer_get_used(connection->buffer),
@@ -408,9 +407,6 @@ void http_stream_on_read_pico(uv_stream_t* tcp, ssize_t nread, const uv_buf_t* b
                    nread,
                    http_request_buffer_get_used(connection->buffer),
                    connection->prevbuflen);
-
-            //fwrite(http_request_buffer_get_buffer(connection->buffer),
-            //       http_request_buffer_get_used(connection->buffer), 1, stdout);
 
             int parsed;
             char buf[4096], *method, *path;
@@ -462,13 +458,12 @@ void http_stream_on_read_pico(uv_stream_t* tcp, ssize_t nread, const uv_buf_t* b
                        old_used,
                        new_used);
 
-                if (old_used < new_used)
+                if (new_used == 0) // WAIT, how did sweep give me a 0 length buffer?
+                    connection->prevbuflen = 0;
+                else if (old_used > new_used)
                     connection->prevbuflen -= (old_used - new_used);
 
                 printf("%d\n", connection->prevbuflen);
-
-                //connection->prevbuflen = http_request_buffer_get_used(connection->buffer);
-                //connection->prevbuflen += parsed;
 
 //                printf("request is %d bytes long\n", parsed);
 //                printf("method is %.*s\n", (int)method_len, method);
@@ -479,9 +474,6 @@ void http_stream_on_read_pico(uv_stream_t* tcp, ssize_t nread, const uv_buf_t* b
 //                    printf("%.*s: %.*s\n", (int)headers[i].name_len, headers[i].name,
 //                           (int)headers[i].value_len, headers[i].value);
 //                }
-                //printf("RESPONDED\n");
-
-                //printf("END ------------------------------------------\n");
             }
             else if (parsed == -1)
             {

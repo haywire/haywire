@@ -3,9 +3,12 @@
 #pragma once
 #include "uv.h"
 #include "http_parser.h"
+#include "http_connection.h"
+#include "http.h"
 
 extern int last_was_value;
 
+http_request* create_http_request(http_connection* connection);
 void free_http_request(http_request* request);
 int http_request_on_message_begin(http_parser *parser);
 int http_request_on_url(http_parser *parser, const char *at, size_t length);

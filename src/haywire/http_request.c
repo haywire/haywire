@@ -368,6 +368,11 @@ void http_request_locate_members(http_connection* connection)
 int http_request_on_message_complete(http_parser* parser)
 {
     http_connection* connection = (http_connection*)parser->data;
+    return http_request_complete_request(connection);
+}
+
+int http_request_complete_request(http_connection* connection)
+{
     http_request* request = connection->request;
     hw_http_response* response = hw_create_http_response(connection);
 

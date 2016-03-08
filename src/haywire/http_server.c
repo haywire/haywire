@@ -15,12 +15,15 @@
 #include "hw_string.h"
 #include "khash.h"
 #include "http_server.h"
+#include "http_request.h"
 #include "connection_consumer.h"
 #include "connection_dispatcher.h"
 #include "http_response_cache.h"
 #include "server_stats.h"
 #include "configuration/configuration.h"
 #include "http_connection.h"
+#include "picohttpparser.h"
+#include "http.h"
 
 #define UVERR(err, msg) fprintf(stderr, "%s: %s\n", msg, uv_strerror(err))
 #define CHECK(r, msg) \
@@ -70,6 +73,10 @@ int hw_init_with_config(configuration* c)
     if (strcmp(config->parser, "http_parser") == 0)
     {
         http_stream_on_read = &http_stream_on_read_http_parser;
+    }
+    else if (strcmp(config->parser, "pico") == 0)
+    {
+        http_stream_on_read = &http_stream_on_read_pico;
     }
     http_server_write_response = &http_server_write_response_single;
     return 0;
@@ -376,6 +383,105 @@ void http_stream_on_read_http_parser(uv_stream_t* tcp, ssize_t nread, const uv_b
          * respond with a blanket 500 error if we can */
         handle_internal_error(connection);
     }
+}
+
+void http_stream_on_read_pico(uv_stream_t* tcp, ssize_t nread, const uv_buf_t* buf)
+{
+    http_connection* connection = (http_connection*)tcp->data;
+
+    if (nread > 0)
+    {
+        // TODO: Should this be at a higher level? Both parsers call this the same way.
+        http_request_buffer_consume(connection->buffer, nread);
+
+        while (connection->prevbuflen < http_request_buffer_get_used(connection->buffer))
+        {
+            int parsed;
+            char buf[4096], *method, *path;
+            int minor_version;
+            struct phr_header headers[100];
+            size_t method_len;
+            size_t path_len;
+            size_t num_headers;
+            num_headers = sizeof(headers) / sizeof(headers[0]);
+
+            parsed = phr_parse_request(&http_request_buffer_get_buffer(connection->buffer)[connection->prevbuflen],
+                                       http_request_buffer_get_used(connection->buffer),
+                                       &method, &method_len, &path, &path_len, &minor_version, headers,
+                                       &num_headers, 0);
+
+            if (parsed > 0)
+            {
+                // Successfully parsed the request.
+                connection->prevbuflen += parsed;
+
+                connection->keep_alive = 1;
+                http_request* request = create_http_request(connection);
+                connection->request = request;
+
+                connection->request->url->value = (char *)malloc(path_len + 1);
+                request->url->length = path_len;
+                strncpy(connection->request->url->value, path, path_len);
+                path[path_len] = 0x00;
+
+                // TODO: Zero-copy headers parsed by pico. Need this PR to implement.
+                // https://github.com/kellabyte/Haywire/pull/79
+                for (int i=0; i<num_headers; i++)
+                {
+                    //set_request_header(connection->request, hw_strdup(&headers[i].name), hw_strdup(&headers[i].value));
+                }
+
+                // Send response.
+                http_request_complete_request(connection);
+
+                printf("request is %d bytes long\n", parsed);
+                printf("method is %.*s\n", (int)method_len, method);
+                printf("path is %.*s\n", (int)path_len, path);
+                printf("HTTP version is 1.%d\n", minor_version);
+                printf("headers:\n");
+                for (int i = 0; i != num_headers; ++i) {
+                    printf("%.*s: %.*s\n", (int)headers[i].name_len, headers[i].name,
+                           (int)headers[i].value_len, headers[i].value);
+                }
+
+                http_request_buffer_mark(connection->buffer);
+                http_request_buffer_sweep(connection->buffer);
+            }
+            else if (parsed == -1)
+            {
+                /* Request is incomplete so keep reading and parsing. */
+                connection->prevbuflen = 0;
+                break;
+            }
+            else if (parsed == -2)
+            {
+                break;
+            }
+        }
+
+        if (connection->prevbuflen == http_request_buffer_get_used(connection->buffer)) {
+            connection->prevbuflen = 0;
+        }
+    } else if (nread == 0) {
+        /* no-op - there's no data to be read, but there might be later */
+    }
+    else if (nread == UV_ENOBUFS) {
+        handle_buffer_exceeded_error(connection);
+    }
+    else if (nread == UV_EOF){
+        uv_shutdown_t* req = malloc(sizeof(uv_shutdown_t));
+        req->data = connection;
+        uv_shutdown(req, &connection->stream, http_stream_on_shutdown);
+    }
+    else if (nread == UV_ECONNRESET || nread == UV_ECONNABORTED) {
+        /* Let's close the connection as the other peer just disappeared */
+        http_stream_close_connection(connection);
+    } else {
+        /* We didn't see this coming, but an unexpected UV error code was passed in, so we'll
+         * respond with a blanket 500 error if we can */
+        handle_internal_error(connection);
+    }
+    connection->prevbuflen = 0;
 }
 
 void http_server_cleanup_write(char* response_string, hw_write_context* write_context, uv_write_t* write_req)

@@ -237,3 +237,13 @@ void http_request_buffer_destroy(hw_request_buffer* buf) {
     free(buffer->current);
     free(buffer);
 }
+
+void* http_request_buffer_get_buffer(hw_request_buffer* buf) {
+    http_request_buffer* buffer = (http_request_buffer*) buf;
+    return buffer->current;
+}
+
+size_t http_request_buffer_get_used(hw_request_buffer* buf) {
+    http_request_buffer* buffer = (http_request_buffer*) buf;
+    return buffer->used;
+}

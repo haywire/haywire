@@ -395,12 +395,23 @@ void http_stream_on_read_pico(uv_stream_t* tcp, ssize_t nread, const uv_buf_t* b
         http_request_buffer_consume(connection->buffer, nread);
 
         //printf("BEGIN ----------------------------------------\n");
-        //printf("NREAD: %d PREVBUFLEN: %d\n", nread, connection->prevbuflen);
+        printf("START\tNREAD: %d BUFUSED: %d PREVBUFLEN: %d\n",
+               nread,
+               http_request_buffer_get_used(connection->buffer),
+               connection->prevbuflen);
         //fwrite(http_request_buffer_get_buffer(connection->buffer),
         //       http_request_buffer_get_used(connection->buffer), 1, stdout);
 
         while (connection->prevbuflen < http_request_buffer_get_used(connection->buffer))
         {
+            printf("LOOP\tNREAD: %d BUFUSED: %d PREVBUFLEN: %d\n",
+                   nread,
+                   http_request_buffer_get_used(connection->buffer),
+                   connection->prevbuflen);
+
+            //fwrite(http_request_buffer_get_buffer(connection->buffer),
+            //       http_request_buffer_get_used(connection->buffer), 1, stdout);
+
             int parsed;
             char buf[4096], *method, *path;
             int minor_version;
@@ -438,9 +449,26 @@ void http_stream_on_read_pico(uv_stream_t* tcp, ssize_t nread, const uv_buf_t* b
 
                 // Send response.
                 http_request_complete_request(connection);
+
+                size_t old_used = http_request_buffer_get_used(connection->buffer);
                 http_request_buffer_mark(connection->buffer);
                 http_request_buffer_sweep(connection->buffer);
-                connection->prevbuflen = http_request_buffer_get_used(connection->buffer);
+                size_t new_used = http_request_buffer_get_used(connection->buffer);
+
+                printf("SWEEP\tNREAD: %d BUFUSED: %d PREVBUFLEN: %d OLD: %d NEW: %d PREVBUFLEN: ",
+                       nread,
+                       http_request_buffer_get_used(connection->buffer),
+                       connection->prevbuflen,
+                       old_used,
+                       new_used);
+
+                if (old_used < new_used)
+                    connection->prevbuflen -= (old_used - new_used);
+
+                printf("%d\n", connection->prevbuflen);
+
+                //connection->prevbuflen = http_request_buffer_get_used(connection->buffer);
+                //connection->prevbuflen += parsed;
 
 //                printf("request is %d bytes long\n", parsed);
 //                printf("method is %.*s\n", (int)method_len, method);

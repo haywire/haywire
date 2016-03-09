@@ -102,3 +102,8 @@ Running 10s test @ http://server:8000
 03-12 18:58:21| 10   4  85   0   0   1| 722M 95.3M 1203M  124G|   0     0 |   0     0 | 166M  555M| 411k  171k| 244k  438k|  3 482   0   0   1
 03-12 18:58:22|  5   2  93   0   0   1| 724M 95.3M 1203M  124G|   0     0 |   0     0 |  76M  256M| 190k   81k| 113k  202k|  3   2   0   0 391
 ```
+
+# Users of Haywire
+There's a production system running Haywire that serves `700 million requests a day` from an Aerospike cluster with `2ms or lower` response times.
+
+[pyrs](https://github.com/skogorev/pyrs) Python handlers for Haywire.

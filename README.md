@@ -25,7 +25,7 @@ Feel free to join in if you feel like helping progress Haywire. I'm open to new 
 
 ## Dependencies
 ```
-apt-get install git gcc make cmake automake autoconf libssl-devel libtool
+apt-get install git gcc make cmake automake autoconf libssl-dev libtool
 ```
 
 ## Compiling on Linux

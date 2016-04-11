@@ -23,6 +23,11 @@ Haywire isn't very useful yet but I wanted to open source it from the very begin
 ## Contributions
 Feel free to join in if you feel like helping progress Haywire. I'm open to new ideas and would love to work with some people instead of by myself!
 
+## Dependencies
+```
+apt-get install git gcc make cmake automake autoconf libssl-devel libtool
+```
+
 ## Building Haywire
 To compile Haywire you need `git` and `python` installed and in your path.
 

@@ -28,32 +28,25 @@ Feel free to join in if you feel like helping progress Haywire. I'm open to new 
 apt-get install git gcc make cmake automake autoconf libssl-devel libtool
 ```
 
-## Building Haywire
-To compile Haywire you need `git` and `python` installed and in your path.
-
-Haywire uses `gyp` which supports generating make type builds or Visual Studio and Xcode projects. The Visual Studio and Xcode projects aren't fully complete so they may not function just yet but they will real soon, hang in there.
-    
-    git clone https://github.com/kellabyte/Haywire.git
-
-### Compiling on Linux
+## Compiling on Linux
     ./make.sh
     
-### Compiling on Mac OSX
+## Compiling on Mac OSX
     ./make.sh
 
-### Compiling on Windows
+## Compiling on Windows
 These instructions are old but may still work. We need to make Windows support in `make.sh`.
 
 Open the Developer Command Prompt for Visual Studio
 
     build.bat
     
-### Benchmarks
+## Benchmarks
 
 Bare metal Rackspace instance    
 Intel(R) Xeon(R) CPU E5-2680 v2 @ 2.80GHz 20 physical cores
 
-##### Throughput
+#### Throughput
 ```
 ../bin/wrk/wrk --script ./pipelined_get.lua --latency -d 5m -t 40 -c 760 http://server:8000 -- 32
 
@@ -72,7 +65,7 @@ Requests/sec: 9,267,161.41
 Transfer/sec:      1.36GB
 ```
 
-##### Latency distribution with coordinated omission at 3.5 million requests/second
+#### Latency distribution with coordinated omission at 3.5 million requests/second
 ```
 ../bin/wrk2/wrk --script ./pipelined_get.lua --latency -d 10s -t 80 -c 512 -R 3500000 http://server:8000 -- 32
 
@@ -108,7 +101,7 @@ Running 10s test @ http://server:8000
 03-12 18:58:22|  5   2  93   0   0   1| 724M 95.3M 1203M  124G|   0     0 |   0     0 |  76M  256M| 190k   81k| 113k  202k|  3   2   0   0 391
 ```
 
-### Users of Haywire
+## Users of Haywire
 There's a production system running Haywire that serves `700 million requests a day` from an Aerospike cluster with `2ms or lower` response times.
 
 [pyrs](https://github.com/skogorev/pyrs) Python handlers for Haywire.

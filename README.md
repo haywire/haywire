@@ -32,7 +32,12 @@ apt-get install git gcc make cmake automake autoconf libssl-dev libtool
     ./make.sh
     
 ## Compiling on Mac OSX
-    ./make.sh
+```
+brew install automake
+brew install libtool
+brew install openssl
+./make.sh
+```
 
 ## Compiling on Windows
 These instructions are old but may still work. We need to make Windows support in `make.sh`.

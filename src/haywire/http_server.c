@@ -214,6 +214,7 @@ int hw_http_open()
             int rc = 0;
             struct server_ctx* ctx = servers + i;
             ctx->index = i;
+            ctx->listen_backlog = config->listen_backlog;
             
             rc = uv_sem_init(&ctx->semaphore, 0);
             rc = uv_thread_create(&ctx->thread_id, connection_consumer_start, ctx);

@@ -1,6 +1,7 @@
 #pragma once
 #include "haywire.h"
 #include "http_connection.h"
+#include "http.h"
 
 typedef struct
 {

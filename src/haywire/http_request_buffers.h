@@ -75,7 +75,10 @@ void http_request_buffer_reassign_pin(hw_request_buffer* buffer, void* old_key, 
  */
 void* http_request_buffer_locate(hw_request_buffer* buffer, void* key, void* default_pointer);
 
+void* http_request_buffer_get_buffer(hw_request_buffer* buf);
+size_t http_request_buffer_get_used(hw_request_buffer* buf);
+
 /**
  * Destroys the buffer and any underlying buffer chunks.
  */
-void http_request_buffer_destroy(hw_request_buffer* buffer);
+void http_request_buffer_destroy(hw_request_buffer* buf);

@@ -149,6 +149,7 @@ typedef struct
     char* http_listen_address;
     unsigned int http_listen_port;
     unsigned int thread_count;
+    char* balancer;
     char* parser;
     bool tcp_nodelay;
     unsigned int listen_backlog;

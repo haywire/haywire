@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/socket.h>
 #include <haywire.h>
 #include "uv.h"
 #include "hw_string.h"

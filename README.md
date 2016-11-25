@@ -14,6 +14,7 @@ Haywire isn't very useful yet but I wanted to open source it from the very begin
 - HTTP keep-alive
 - HTTP pipelining
 - Non-blocking I/O
+- SO_REUSEPORT multi-process and multi-threaded load balancing across CPU cores.
 
 ## Plans or Ideas
 - HTTP handler routing

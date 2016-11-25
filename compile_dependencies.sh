@@ -28,3 +28,36 @@ if [ ! -d "bin/wrk2" ]; then
     make
     cd ../../
 fi
+
+# Getting libumem
+if [ ! -d "lib/libumem" ]; then
+    echo "git clone https://github.com/gburd/libumem.git lib/libumem"
+    git clone https://github.com/gburd/libumem.git lib/libumem
+    cd lib/libumem
+    ./autogen.sh
+    ./configure
+    make
+    cd ../../
+fi
+
+# Getting TCMalloc
+if [ ! -d "lib/gperftools" ]; then
+    echo "git clone https://github.com/gperftools/gperftools.git lib/gperftools"
+    git clone https://github.com/gperftools/gperftools.git lib/gperftools
+    cd lib/gperftools
+    ./autogen.sh
+    ./configure
+    make
+    cd ../../
+fi
+
+# Getting JEMalloc
+if [ ! -d "lib/jemalloc" ]; then
+    echo "git clone https://github.com/jemalloc/jemalloc.git lib/jemalloc"
+    git clone https://github.com/jemalloc/jemalloc.git lib/jemalloc
+    cd lib/gperftools
+    ./autogen.sh
+    ./configure
+    make
+    cd ../../
+fi

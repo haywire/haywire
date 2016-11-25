@@ -21,6 +21,7 @@
 #include "server_stats.h"
 #include "configuration/configuration.h"
 #include "http_connection.h"
+#include "http_request.h"
 
 #define UVERR(err, msg) fprintf(stderr, "%s: %s\n", msg, uv_strerror(err))
 #define CHECK(r, msg) \
@@ -61,6 +62,7 @@ int hw_init_with_config(configuration* c)
     config->tcp_nodelay = c->tcp_nodelay;
     config->listen_backlog = c->listen_backlog? c->listen_backlog : SOMAXCONN;
     config->parser = dupstr(c->parser);
+    config->balancer = dupstr(c->balancer);
     config->max_request_size = c->max_request_size;
 
     http_v1_0 = create_string("HTTP/1.0 ");
@@ -87,10 +89,11 @@ int hw_init_from_config(char* configuration_filename)
 
 void print_configuration()
 {
-    printf("Address: %s\nPort: %d\nThreads: %d\nParser: %s\nTCP No Delay: %s\nListen backlog: %d\nMaximum request size: %d\n",
+    printf("Address: %s\nPort: %d\nThreads: %d\nBalancer: %s\nParser: %s\nTCP No Delay: %s\nListen backlog: %d\nMaximum request size: %d\n",
            config->http_listen_address,
            config->http_listen_port,
            config->thread_count,
+           config->balancer,
            config->parser,
            config->tcp_nodelay? "on": "off",
            config->listen_backlog,
@@ -170,7 +173,6 @@ int hw_http_open()
     
     /* TODO: Use the return values from uv_tcp_init() and uv_tcp_bind() */
     uv_loop = uv_default_loop();
-    uv_tcp_init(uv_loop, &server);
     
     listener_async_handles = calloc(listener_count, sizeof(uv_async_t));
     listener_event_loops = calloc(listener_count, sizeof(uv_loop_t));
@@ -185,6 +187,29 @@ int hw_http_open()
     {
         /* If running single threaded there is no need to use the IPC pipe
          to distribute requests between threads so lets avoid the IPC overhead */
+
+        int rc;
+        rc = uv_tcp_init_ex(uv_loop, &server, AF_INET);
+        if (rc != 0)
+        {
+            printf("TWO %d\n", rc);
+        }
+        
+        if (strcmp(config->balancer, "reuseport") == 0)
+        {
+            uv_os_fd_t fd;
+            int on = 1;
+            rc = uv_fileno(&server, &fd);
+            if (rc != 0)
+            {
+                printf("ONE %d\n", rc);
+            }
+            rc = setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, (char*)&on, sizeof(on));
+            if (rc != 0)
+            {
+                printf("THREE %d\n", errno);
+            }
+        }
         
         initialize_http_request_cache();
         http_request_cache_configure_listener(uv_loop, NULL);
@@ -201,7 +226,7 @@ int hw_http_open()
         printf("Listening...\n");
         uv_run(uv_loop, UV_RUN_DEFAULT);
     }
-    else
+    else if (listener_count > 0 && strcmp(config->balancer, "ipc") == 0)
     {
         int i = 0;
 
@@ -225,14 +250,66 @@ int hw_http_open()
         
         start_connection_dispatching(UV_TCP, threads, servers, config->http_listen_address, config->http_listen_port, config->tcp_nodelay, config->listen_backlog);
     }
+    else if (listener_count > 0 && strcmp(config->balancer, "reuseport") == 0)
+    {
+        struct server_ctx* servers;
+        servers = calloc(threads, sizeof(servers[0]));
+        
+        for (int i = 0; i < threads; i++)
+        {
+            struct server_ctx* ctx = servers + i;
+            ctx->index = i;
+            int rc = uv_thread_create(&ctx->thread_id, reuseport_thread_start, ctx);
+        }
+        
+        print_configuration();
+        printf("Listening...\n");
+        uv_run(uv_loop, UV_RUN_DEFAULT);
+    }
     
     return 0;
+}
+
+void reuseport_thread_start(void *arg)
+{
+    int rc;
+    struct server_ctx* ctx;
+    uv_loop_t* loop;
+    uv_tcp_t svr;
+    
+    ctx = arg;
+    loop = uv_loop_new();
+    listener_event_loops[ctx->index] = *loop;
+    
+    initialize_http_request_cache();
+    http_request_cache_configure_listener(loop, &listener_async_handles[ctx->index]);
+    
+    struct sockaddr_in addr;
+    uv_tcp_t server;
+    
+    rc = uv_tcp_init_ex(loop, &server, AF_INET);
+    uv_ip4_addr(config->http_listen_address, config->http_listen_port, &addr);
+    
+    uv_os_fd_t fd;
+    int on = 1;
+    uv_fileno(&server, &fd);
+    rc = setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, (char*)&on, sizeof(on));
+    if (rc != 0)
+    {
+        printf("%d\n", errno);
+    }
+    
+    uv_tcp_bind(&server, (const struct sockaddr*)&addr, 0);
+    int r = uv_listen((uv_stream_t*) &server, 128, http_stream_on_connect);
+
+    rc = uv_run(loop, UV_RUN_DEFAULT);
+    uv_loop_delete(loop);
 }
 
 void http_stream_on_connect(uv_stream_t* stream, int status)
 {
     http_connection* connection = create_http_connection();
-    uv_tcp_init(uv_loop, &connection->stream);
+    uv_tcp_init(stream->loop, &connection->stream);
     http_parser_init(&connection->parser, HTTP_REQUEST);
     
     connection->parser.data = connection;

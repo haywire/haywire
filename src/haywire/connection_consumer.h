@@ -47,3 +47,4 @@ struct ipc_server_ctx
 };
 
 void connection_consumer_start(void *arg);
+void connection_consumer_close(uv_async_t* handle, int status);

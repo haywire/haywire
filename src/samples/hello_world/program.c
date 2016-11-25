@@ -101,6 +101,7 @@ int main(int args, char** argsv)
     conf = opt_config_init();
     opt_flag_int(conf, &config.http_listen_port, "port", 8000, "Port to listen on.");
     opt_flag_int(conf, &config.thread_count, "threads", 0, "Number of threads to use.");
+    opt_flag_string(conf, &config.balancer, "balancer", "ipc", "Method to load balance threads.");
     opt_flag_string(conf, &config.parser, "parser", "http_parser", "HTTP parser to use");
     opt_flag_int(conf, &config.max_request_size, "max_request_size", 1048576, "Maximum request size. Defaults to 1MB.");
     opt_flag_bool(conf, &config.tcp_nodelay, "tcp_nodelay", "If present, enables tcp_nodelay (i.e. disables Nagle's algorithm).");

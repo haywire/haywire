@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/haywire/haywire.png?branch=master)](https://travis-ci.org/haywire/Hhaywire)
+[![Build Status](https://travis-ci.org/haywire/haywire.png?branch=master)](https://travis-ci.org/haywire/haywire)
 [![Join us on #haywire on Freenode](https://kiwiirc.com/buttons/chat.freenode.net/haywire.png)](https://kiwiirc.com/client/chat.freenode.net:+6697/#haywire)
 
 Haywire

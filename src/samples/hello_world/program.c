@@ -106,6 +106,7 @@ int main(int args, char** argsv)
     opt_flag_int(conf, &config.max_request_size, "max_request_size", 1048576, "Maximum request size. Defaults to 1MB.");
     opt_flag_bool(conf, &config.tcp_nodelay, "tcp_nodelay", "If present, enables tcp_nodelay (i.e. disables Nagle's algorithm).");
     opt_flag_int(conf, &config.listen_backlog, "listen_backlog", 0, "Maximum size of the backlog when accepting connection. Defaults to SOMAXCONN.");
+    opt_flag_int(conf, &config.response_batch_size, "batch", 0, "Size to batch before sending responses.");
     args = opt_config_parse(conf, args, argsv);
 
     hw_init_with_config(&config);

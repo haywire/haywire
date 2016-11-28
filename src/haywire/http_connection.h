@@ -18,4 +18,6 @@ typedef struct
     int last_was_value;
     enum {OPEN, CLOSING, CLOSED} state;
     hw_request_buffer* buffer;
+    uv_buf_t response_buffers[1024];
+    unsigned int response_buffers_count;
 } http_connection;

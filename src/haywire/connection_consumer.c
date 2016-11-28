@@ -20,7 +20,7 @@ void ipc_read_cb(uv_stream_t* handle, ssize_t nread, const uv_buf_t* buf)
     ctx = container_of(ipc_pipe, struct ipc_client_ctx, ipc_pipe);
     loop = ipc_pipe->loop;
     
-    uv_pipe_pending_count(ipc_pipe);
+    int pending = uv_pipe_pending_count(ipc_pipe);
     type = uv_pipe_pending_type(ipc_pipe);
     
     if (type == UV_TCP) {
@@ -67,6 +67,7 @@ void connection_consumer_new_connection(uv_stream_t* server_handle, int status)
     
     connection->parser.data = connection;
     connection->stream.data = connection;
+    connection->response_buffers_count = 0;
     
     rc = uv_tcp_init(server_handle->loop, &connection->stream);
     

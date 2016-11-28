@@ -49,8 +49,23 @@ uv_async_t* listener_async_handles;
 uv_loop_t* listener_event_loops;
 uv_barrier_t* listeners_created_barrier;
 
+#define RESPONSE \
+"HTTP/1.1 200 OK\r\n" \
+"Server: Haywire/master\r\n" \
+"Date: Fri Nov 25 04:29:33 2016\r\n" \
+"Content-Type: text/html\r\n" \
+"Connection: Keep-Alive\r\n" \
+"Content-Length: 13\r\n" \
+"\r\n" \
+"hello world\n"
+
+static uv_buf_t resbuf2;
+
 int hw_init_with_config(configuration* c)
 {
+    resbuf2.base = RESPONSE;
+    resbuf2.len = sizeof(RESPONSE);
+
 #ifdef DEBUG
     char route[] = "/stats";
     hw_http_add_route(route, get_server_stats, NULL);
@@ -65,6 +80,7 @@ int hw_init_with_config(configuration* c)
     config->parser = dupstr(c->parser);
     config->balancer = dupstr(c->balancer);
     config->max_request_size = c->max_request_size;
+    config->response_batch_size = c->response_batch_size;
 
     http_v1_0 = create_string("HTTP/1.0 ");
     http_v1_1 = create_string("HTTP/1.1 ");
@@ -74,7 +90,15 @@ int hw_init_with_config(configuration* c)
     {
         http_stream_on_read = &http_stream_on_read_http_parser;
     }
-    http_server_write_response = &http_server_write_response_single;
+    
+    if (config->response_batch_size > 0)
+    {
+        http_server_write_response = &http_server_write_response_batched;
+    }
+    else
+    {
+        http_server_write_response = &http_server_write_response_single;
+    }
     return 0;
 }
 
@@ -90,7 +114,7 @@ int hw_init_from_config(char* configuration_filename)
 
 void print_configuration()
 {
-    printf("Address: %s\nPort: %d\nThreads: %d\nBalancer: %s\nParser: %s\nTCP No Delay: %s\nListen backlog: %d\nMaximum request size: %d\n",
+    printf("Address: %s\nPort: %d\nThreads: %d\nBalancer: %s\nParser: %s\nTCP No Delay: %s\nListen backlog: %d\nMaximum request size: %d\nResponse batch size: %d\n",
            config->http_listen_address,
            config->http_listen_port,
            config->thread_count,
@@ -98,7 +122,8 @@ void print_configuration()
            config->parser,
            config->tcp_nodelay? "on": "off",
            config->listen_backlog,
-           config->max_request_size);
+           config->max_request_size,
+           config->response_batch_size);
 }
 
 http_connection* create_http_connection()
@@ -315,7 +340,8 @@ void http_stream_on_connect(uv_stream_t* stream, int status)
     
     connection->parser.data = connection;
     connection->stream.data = connection;
-
+    connection->response_buffers_count = 0;
+    
     /* TODO: Use the return values from uv_accept() and uv_read_start() */
     uv_accept(stream, (uv_stream_t*)&connection->stream);
     connection->state = OPEN;
@@ -459,7 +485,7 @@ void http_stream_on_read_http_parser(uv_stream_t* tcp, ssize_t nread, const uv_b
 
 void http_server_cleanup_write(char* response_string, hw_write_context* write_context, uv_write_t* write_req)
 {
-    free(response_string);
+//    free(response_string);
     free(write_context);
     free(write_req);
 }
@@ -469,11 +495,13 @@ int http_server_write_response_single(hw_write_context* write_context, hw_string
     http_connection* connection = write_context->connection;
 
     if (connection->state == OPEN) {
-        uv_write_t *write_req = (uv_write_t *) malloc(sizeof(*write_req) + sizeof(uv_buf_t));
-        uv_buf_t *resbuf = (uv_buf_t *) (write_req + 1);
+//        uv_write_t *write_req = (uv_write_t *) malloc(sizeof(*write_req) + sizeof(uv_buf_t));
+//        uv_buf_t *resbuf = (uv_buf_t *) (write_req + 1);
 
-        resbuf->base = response->value;
-        resbuf->len = response->length;
+//        resbuf->base = response->value;
+//        resbuf->len = response->length;
+        
+        uv_write_t *write_req = (uv_write_t *) malloc(sizeof(*write_req));
 
         write_req->data = write_context;
 
@@ -481,15 +509,48 @@ int http_server_write_response_single(hw_write_context* write_context, hw_string
 
         if (uv_is_writable(stream)) {
             /* Ensuring that the the response can still be written. */
-            uv_write(write_req, stream, resbuf, 1, http_server_after_write);
+            uv_write(write_req, stream, &resbuf2, 1, http_server_after_write);
             /* TODO: Use the return values from uv_write() */
         } else {
             /* The connection was closed, so we can write the response back, but we still need to free up things */
-            http_server_cleanup_write(resbuf->base, write_context, write_req);
+//            http_server_cleanup_write(resbuf->base, write_context, write_req);
+            http_server_cleanup_write(resbuf2.base, write_context, write_req);
         }
     }
 
     return 0;
+}
+
+int http_server_write_response_batched(hw_write_context* write_context, hw_string* response)
+{
+    int rc = 0;
+    uv_buf_t resbuf;
+    resbuf.base = response->value;
+    resbuf.len = response->length + 1;
+    
+    write_context->connection->response_buffers[write_context->connection->response_buffers_count] = resbuf;
+    write_context->connection->response_buffers_count++;
+    
+    if (write_context->connection->response_buffers_count == config->response_batch_size)
+    {
+        int err = uv_try_write((uv_stream_t*)&write_context->connection->stream,
+                               write_context->connection->response_buffers,
+                               write_context->connection->response_buffers_count);
+        
+        for (int i=0; i<write_context->connection->response_buffers_count; i++)
+        {
+            free(write_context->connection->response_buffers[i].base);
+        }
+        write_context->connection->response_buffers_count = 0;
+        
+        if (err == UV_ENOSYS || err == UV_EAGAIN)
+            rc = 0;
+        if (err < 0)
+            rc = err;
+    }
+    
+    free(write_context);
+    return rc;
 }
 
 void http_server_after_write(uv_write_t* req, int status)

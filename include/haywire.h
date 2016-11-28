@@ -154,6 +154,7 @@ typedef struct
     bool tcp_nodelay;
     unsigned int listen_backlog;
     unsigned int max_request_size;
+    unsigned int response_batch_size;
 } configuration;
     
 typedef struct

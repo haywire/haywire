@@ -136,16 +136,17 @@ void hw_http_response_send(hw_http_response* response, void* user_data, http_res
 {
     hw_write_context* write_context = malloc(sizeof(hw_write_context));
     http_response* resp = (http_response*)response;
-    hw_string* response_buffer = create_response_buffer(response);
+//    hw_string* response_buffer = create_response_buffer(response);
 
     write_context->connection = resp->connection;
     write_context->user_data = user_data;
     write_context->callback = callback;
     write_context->request = resp->request;
 
-    http_server_write_response(write_context, response_buffer);
+//    http_server_write_response(write_context, response_buffer);
+    http_server_write_response(write_context, NULL);
     resp->sent = 1;
 
-    free(response_buffer);
+//    free(response_buffer);
     hw_free_http_response(response);
 }

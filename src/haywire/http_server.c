@@ -525,10 +525,11 @@ int http_server_write_response_batched(hw_write_context* write_context, hw_strin
 {
     int rc = 0;
     uv_buf_t resbuf;
-    resbuf.base = response->value;
-    resbuf.len = response->length + 1;
+//    resbuf.base = response->value;
+//    resbuf.len = response->length + 1;
     
-    write_context->connection->response_buffers[write_context->connection->response_buffers_count] = resbuf;
+//    write_context->connection->response_buffers[write_context->connection->response_buffers_count] = resbuf;
+    write_context->connection->response_buffers[write_context->connection->response_buffers_count] = resbuf2;
     write_context->connection->response_buffers_count++;
     
     if (write_context->connection->response_buffers_count == config->response_batch_size)
@@ -537,10 +538,10 @@ int http_server_write_response_batched(hw_write_context* write_context, hw_strin
                                write_context->connection->response_buffers,
                                write_context->connection->response_buffers_count);
         
-        for (int i=0; i<write_context->connection->response_buffers_count; i++)
-        {
-            free(write_context->connection->response_buffers[i].base);
-        }
+//        for (int i=0; i<write_context->connection->response_buffers_count; i++)
+//        {
+//            free(write_context->connection->response_buffers[i].base);
+//        }
         write_context->connection->response_buffers_count = 0;
         
         if (err == UV_ENOSYS || err == UV_EAGAIN)

@@ -17,6 +17,8 @@ union stream_handle
     uv_tcp_t tcp;
 };
 
+configuration* config;
+
 extern void* routes;
 extern uv_loop_t* uv_loop;
 extern hw_string* http_v1_0;

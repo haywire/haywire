@@ -135,7 +135,7 @@ enum hw_http_method
 #define STRLENOF(s) sizeof(s)-1
 #define SETSTRING(s,val) s.value=val; s.length=STRLENOF(val)
 #define APPENDSTRING(s,val) memcpy((char*)s->value + s->length, val, STRLENOF(val)); s->length+=STRLENOF(val)
-
+    
 typedef	void* hw_http_response;
 
 typedef struct
@@ -155,6 +155,7 @@ typedef struct
     unsigned int listen_backlog;
     unsigned int max_request_size;
     unsigned int response_batch_size;
+    bool static_response;
 } configuration;
     
 typedef struct

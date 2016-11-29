@@ -34,7 +34,6 @@ exit(1); \
 
 KHASH_MAP_INIT_STR(string_hashmap, hw_route_entry*)
 
-configuration* config;
 static uv_tcp_t server;
 static http_parser_settings parser_settings;
 static struct sockaddr_in listen_address;
@@ -81,6 +80,7 @@ int hw_init_with_config(configuration* c)
     config->balancer = dupstr(c->balancer);
     config->max_request_size = c->max_request_size;
     config->response_batch_size = c->response_batch_size;
+    config->static_response = c->static_response;
 
     http_v1_0 = create_string("HTTP/1.0 ");
     http_v1_1 = create_string("HTTP/1.1 ");
@@ -114,7 +114,7 @@ int hw_init_from_config(char* configuration_filename)
 
 void print_configuration()
 {
-    printf("Address: %s\nPort: %d\nThreads: %d\nBalancer: %s\nParser: %s\nTCP No Delay: %s\nListen backlog: %d\nMaximum request size: %d\nResponse batch size: %d\n",
+    printf("Address: %s\nPort: %d\nThreads: %d\nBalancer: %s\nParser: %s\nTCP No Delay: %s\nListen backlog: %d\nMaximum request size: %d\nResponse batch size: %d\nStatic response: %d\n",
            config->http_listen_address,
            config->http_listen_port,
            config->thread_count,
@@ -123,7 +123,8 @@ void print_configuration()
            config->tcp_nodelay? "on": "off",
            config->listen_backlog,
            config->max_request_size,
-           config->response_batch_size);
+           config->response_batch_size,
+           config->static_response);
 }
 
 http_connection* create_http_connection()
@@ -485,7 +486,10 @@ void http_stream_on_read_http_parser(uv_stream_t* tcp, ssize_t nread, const uv_b
 
 void http_server_cleanup_write(char* response_string, hw_write_context* write_context, uv_write_t* write_req)
 {
-//    free(response_string);
+    if (!config->static_response)
+    {
+        free(response_string);
+    }
     free(write_context);
     free(write_req);
 }
@@ -495,11 +499,20 @@ int http_server_write_response_single(hw_write_context* write_context, hw_string
     http_connection* connection = write_context->connection;
 
     if (connection->state == OPEN) {
-//        uv_write_t *write_req = (uv_write_t *) malloc(sizeof(*write_req) + sizeof(uv_buf_t));
-//        uv_buf_t *resbuf = (uv_buf_t *) (write_req + 1);
-
-//        resbuf->base = response->value;
-//        resbuf->len = response->length;
+        uv_buf_t *resbuf;
+        
+        if (config->static_response)
+        {
+            resbuf = &resbuf2;
+        }
+        else
+        {
+            uv_write_t *write_req = (uv_write_t *) malloc(sizeof(*write_req) + sizeof(uv_buf_t));
+            resbuf = (uv_buf_t *) (write_req + 1);
+            
+            resbuf->base = response->value;
+            resbuf->len = response->length;
+        }
         
         uv_write_t *write_req = (uv_write_t *) malloc(sizeof(*write_req));
 
@@ -509,12 +522,11 @@ int http_server_write_response_single(hw_write_context* write_context, hw_string
 
         if (uv_is_writable(stream)) {
             /* Ensuring that the the response can still be written. */
-            uv_write(write_req, stream, &resbuf2, 1, http_server_after_write);
+            uv_write(write_req, stream, &resbuf, 1, http_server_after_write);
             /* TODO: Use the return values from uv_write() */
         } else {
             /* The connection was closed, so we can write the response back, but we still need to free up things */
-//            http_server_cleanup_write(resbuf->base, write_context, write_req);
-            http_server_cleanup_write(resbuf2.base, write_context, write_req);
+            http_server_cleanup_write(resbuf->base, write_context, write_req);
         }
     }
 
@@ -525,11 +537,18 @@ int http_server_write_response_batched(hw_write_context* write_context, hw_strin
 {
     int rc = 0;
     uv_buf_t resbuf;
-//    resbuf.base = response->value;
-//    resbuf.len = response->length + 1;
     
-//    write_context->connection->response_buffers[write_context->connection->response_buffers_count] = resbuf;
-    write_context->connection->response_buffers[write_context->connection->response_buffers_count] = resbuf2;
+    if (config->static_response)
+    {
+        resbuf = resbuf2;
+    }
+    else
+    {
+            resbuf.base = response->value;
+            resbuf.len = response->length + 1;
+    }
+    
+    write_context->connection->response_buffers[write_context->connection->response_buffers_count] = resbuf;
     write_context->connection->response_buffers_count++;
     
     if (write_context->connection->response_buffers_count == config->response_batch_size)
@@ -538,10 +557,13 @@ int http_server_write_response_batched(hw_write_context* write_context, hw_strin
                                write_context->connection->response_buffers,
                                write_context->connection->response_buffers_count);
         
-//        for (int i=0; i<write_context->connection->response_buffers_count; i++)
-//        {
-//            free(write_context->connection->response_buffers[i].base);
-//        }
+        if (!config->static_response)
+        {
+            for (int i=0; i<write_context->connection->response_buffers_count; i++)
+            {
+                free(write_context->connection->response_buffers[i].base);
+            }
+        }
         write_context->connection->response_buffers_count = 0;
         
         if (err == UV_ENOSYS || err == UV_EAGAIN)

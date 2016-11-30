@@ -78,6 +78,9 @@ Since lockless was the lowest latency allocator we ran it at `4 million requests
 #### Rate of 3 million requests/second
 ![Latency distribution](http://i.imgur.com/TPvuB37.png)
 
+#### Rate of 4 million requests/second
+![Latency distribution](http://i.imgur.com/jEEhhbF.png)
+
 ## Conclusion
 > 1. Which allocator gives us the most throughput (requests/second).
 

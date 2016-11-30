@@ -68,6 +68,8 @@ Transfer/sec:      1.38GB
 ```
 
 ## Latency distribution
+The latency distribution benchmarks are using [wrk2](https://github.com/giltene/wrk2) from Gile Tene which does proper latency calculations using HdrHistogram and coordination omission. They run with a `3 million requests/second` constant rate.
+
 ![Latency distribution](http://i.imgur.com/Mt1EqEl.png)
 
 ## Conclusion

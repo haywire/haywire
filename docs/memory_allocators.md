@@ -72,17 +72,23 @@ The latency distribution benchmarks are using [wrk2](https://github.com/giltene/
 
 Since lockless was the lowest latency allocator we ran it at `4 million requests/second` with the name `lockless_4M` to see if it suffers the same tail latency when pushed `1 million requests/second` harder than the other allocators.
 
-#### Rate of 1 million requests/second
+#### Rate of 500,000 requests/second
+![Latency distribution](http://i.imgur.com/DYHPshd.png)
+
+#### Rate of 1,000,000 requests/second
 ![Latency distribution](http://i.imgur.com/VAxvdb4.png)
 
-#### Rate of 2 million requests/second
+#### Rate of 2,000,000 requests/second
 ![Latency distribution](http://i.imgur.com/8h78ii1.png)
 
-#### Rate of 3 million requests/second
+#### Rate of 3,000,000 requests/second
 ![Latency distribution](http://i.imgur.com/TPvuB37.png)
 
-#### Rate of 4 million requests/second
+#### Rate of 4,000,000 requests/second
 ![Latency distribution](http://i.imgur.com/jEEhhbF.png)
+
+#### Rate of 5,000,000 requests/second
+![Latency distribution](http://i.imgur.com/b1NDEKz.png)
 
 ## Conclusion
 > 1. Which allocator gives us the most throughput (requests/second).

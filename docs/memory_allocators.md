@@ -70,7 +70,9 @@ Transfer/sec:      1.38GB
 ## Latency distribution
 The latency distribution benchmarks are using [wrk2](https://github.com/giltene/wrk2) from Gile Tene which does proper latency calculations using HdrHistogram and coordination omission. They run with a `3 million requests/second` constant rate.
 
-![Latency distribution](http://i.imgur.com/Mt1EqEl.png)
+Since lockless was the lowest latency allocator we ran it at `4 million requests/second` with the name `lockless_4M` to see if it suffers the same tail latency when pushed `1 million requests/second` harder than the other allocators.
+
+![Latency distribution](http://i.imgur.com/5Bc0Tu3.png)
 
 ## Conclusion
 > 1. Which allocator gives us the most throughput (requests/second).

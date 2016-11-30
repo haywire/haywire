@@ -180,16 +180,20 @@ void http_request_buffer_print(hw_request_buffer* buf) {
 
 void http_request_buffer_pin(hw_request_buffer* buf, void* key, void* pointer) {
     http_request_buffer* buffer = (http_request_buffer*) buf;
+    int offset, ret;
 
     khiter_t offset_key = kh_get(pointer_hashmap, buffer->offsets, key);
 
-    int offset = pointer - buffer->current;
-    int ret;
+    offset = pointer - buffer->current;
 
-    int is_missing = (offset_key == kh_end(buffer->offsets));
-    if (is_missing) {
+    if (buffer->offsets_active) {
+        int is_missing = (offset_key == kh_end(buffer->offsets));
+        if (is_missing) {
+           offset_key = kh_put(pointer_hashmap, buffer->offsets, key, &ret);
+        } 
+    } else {
         offset_key = kh_put(pointer_hashmap, buffer->offsets, key, &ret);
-    } 
+    }
 
     kh_value(buffer->offsets, offset_key) = offset;
 }
@@ -216,11 +220,12 @@ void http_request_buffer_reassign_pin(hw_request_buffer* buf, void* old_key, voi
 void* http_request_buffer_locate(hw_request_buffer* buf, void* key, void* default_pointer) {
     http_request_buffer* buffer = (http_request_buffer*) buf;
     void* location = default_pointer;
-    khiter_t offset_key = kh_get(pointer_hashmap, buffer->offsets, key);
 
     int offset, is_missing;
 
     if (buffer->offsets_active) {
+        khiter_t offset_key = kh_get(pointer_hashmap, buffer->offsets, key);
+
         is_missing = (offset_key == kh_end(buffer->offsets));
         if (!is_missing) {
             offset = kh_value(buffer->offsets, offset_key);

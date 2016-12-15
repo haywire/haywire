@@ -14,3 +14,4 @@ int http_request_on_header_value(http_parser *parser, const char *at, size_t len
 int http_request_on_body(http_parser *parser, const char *at, size_t length);
 int http_request_on_headers_complete(http_parser *parser);
 int http_request_on_message_complete(http_parser *parser);
+void hw_print_body(http_request* request);

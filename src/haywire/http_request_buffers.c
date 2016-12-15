@@ -15,7 +15,7 @@ typedef struct {
     size_t mark;
     size_t used;
     size_t used_before;
-    void* current;
+    char* current;
     khash_t(pointer_hashmap)* offsets;
     bool offsets_active;
 } http_request_buffer;
@@ -178,7 +178,7 @@ void http_request_buffer_print(hw_request_buffer* buf) {
     printf("----\n");
 }
 
-void http_request_buffer_pin(hw_request_buffer* buf, void* key, void* pointer) {
+void http_request_buffer_pin(hw_request_buffer* buf, void* key, char* pointer) {
     http_request_buffer* buffer = (http_request_buffer*) buf;
 
     khiter_t offset_key = kh_get(pointer_hashmap, buffer->offsets, key);

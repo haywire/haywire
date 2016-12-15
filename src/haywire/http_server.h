@@ -39,9 +39,8 @@ void http_server_after_write(uv_write_t* req, int status);
 void http_stream_on_read_http_parser(uv_stream_t* tcp, ssize_t nread, const uv_buf_t* buf);
 void reuseport_thread_start(void *arg);
 
-static const int socketOption =
 #ifdef _WIN32
-SO_REUSEADDR;
+#define SOCKET_OPTION SO_REUSEADDR
 #else  /* !_WIN32 */
-SO_REUSEPORT;
+#define SOCKET_OPTION SO_REUSEPORT
 #endif

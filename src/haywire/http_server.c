@@ -209,7 +209,7 @@ int hw_http_open()
             {
                 printf("ONE %d\n", rc);
             }
-            rc = setsockopt(fd, SOL_SOCKET, socketOption, (char*)&on, sizeof(on));
+            rc = setsockopt(fd, SOL_SOCKET, SOCKET_OPTION, (char*)&on, sizeof(on));
             if (rc != 0)
             {
                 printf("THREE %d\n", errno);
@@ -298,7 +298,7 @@ void reuseport_thread_start(void *arg)
     uv_os_fd_t fd;
     int on = 1;
     uv_fileno(&server, &fd);
-    rc = setsockopt(fd, SOL_SOCKET, socketOption, (char*)&on, sizeof(on));
+    rc = setsockopt(fd, SOL_SOCKET, SOCKET_OPTION, (char*)&on, sizeof(on));
     if (rc != 0)
     {
         printf("%d\n", errno);

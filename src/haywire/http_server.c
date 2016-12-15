@@ -10,7 +10,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef _WIN32
+#include <winsock2.h>
+#else
 #include <sys/socket.h>
+#endif
 #include <haywire.h>
 #include "uv.h"
 #include "hw_string.h"
@@ -205,7 +209,7 @@ int hw_http_open()
             {
                 printf("ONE %d\n", rc);
             }
-            rc = setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, (char*)&on, sizeof(on));
+            rc = setsockopt(fd, SOL_SOCKET, SOCKET_OPTION, (char*)&on, sizeof(on));
             if (rc != 0)
             {
                 printf("THREE %d\n", errno);
@@ -294,7 +298,7 @@ void reuseport_thread_start(void *arg)
     uv_os_fd_t fd;
     int on = 1;
     uv_fileno(&server, &fd);
-    rc = setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, (char*)&on, sizeof(on));
+    rc = setsockopt(fd, SOL_SOCKET, SOCKET_OPTION, (char*)&on, sizeof(on));
     if (rc != 0)
     {
         printf("%d\n", errno);

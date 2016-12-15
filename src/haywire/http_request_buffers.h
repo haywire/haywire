@@ -57,7 +57,7 @@ void http_request_buffer_chunk(hw_request_buffer* buffer, hw_request_buffer_chun
  * the caller eventually, when http_request_buffer_locate is called. The pin is given a key by the caller so it can be
  * retrieved later. Pins will be overwritten if the same key is used multiple times.
  */
-void http_request_buffer_pin(hw_request_buffer* buffer, void* key, void* pointer);
+void http_request_buffer_pin(hw_request_buffer* buffer, void* key, char* pointer);
 
 /**
  * Allows the caller to assign a new key to a pin.

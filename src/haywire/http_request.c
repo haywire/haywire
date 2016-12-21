@@ -71,7 +71,7 @@ void* get_header(http_request* request, hw_string* name)
     khiter_t k = kh_get(hw_string_hashmap, h, name);
 
     void* val;
-    
+
     int is_missing = (k == kh_end(h));
     if (is_missing) {
         val = NULL;
@@ -253,7 +253,7 @@ int http_request_on_headers_complete(http_parser* parser)
     }
     connection->current_header_key.length = 0;
     connection->current_header_value.length = 0;
-    
+
     connection->request->http_major = parser->http_major;
     connection->request->http_minor = parser->http_minor;
     connection->request->method = parser->method;
@@ -277,7 +277,7 @@ int http_request_on_body(http_parser *parser, const char *at, size_t length)
         } else {
             body->length += length;
         }
-        
+
         request->body_length = body->length;
     }
 
@@ -287,10 +287,10 @@ int http_request_on_body(http_parser *parser, const char *at, size_t length)
 hw_route_entry* get_route_callback(hw_string* url)
 {
     hw_route_entry* route_entry = NULL;
-    
+
     const char* k;
     const char* v;
-     
+
     khash_t(string_hashmap) *h = routes;
 
     kh_foreach(h, k, v,
@@ -301,7 +301,7 @@ hw_route_entry* get_route_callback(hw_string* url)
             route_entry = (hw_route_entry*)v;
         }
     });
-     
+
     return route_entry;
 }
 
@@ -318,20 +318,20 @@ void send_error_response(http_request* request, http_response* response, const c
     status_code.value = error_code;
     status_code.length = strlen(error_code);
     hw_set_response_status_code(response, &status_code);
-    
+
     SETSTRING(content_type_name, "Content-Type");
-    
+
     SETSTRING(content_type_value, "text/html");
     hw_set_response_header(response, &content_type_name, &content_type_value);
 
     body.value = error_message;
     body.length = strlen(error_message);
     hw_set_body(response, &body);
-    
+
     if (request->keep_alive)
     {
         SETSTRING(keep_alive_name, "Connection");
-        
+
         SETSTRING(keep_alive_value, "Keep-Alive");
         hw_set_response_header(response, &keep_alive_name, &keep_alive_value);
     }
@@ -384,17 +384,24 @@ int http_request_on_message_complete(http_parser* parser)
     } else {
         http_request_locate_members(connection);
 
-        hw_route_entry* route_entry = request != NULL ? get_route_callback(request->url) : NULL;
+		if (root_request_callback != NULL)
+		{
+			root_request_callback(request, response, NULL);
+		}
+		else
+		{
+			hw_route_entry* route_entry = request != NULL ? get_route_callback(request->url) : NULL;
 
-        if (route_entry != NULL)
-        {
-            route_entry->callback(request, response, route_entry->user_data);
-        }
-        else
-        {
-            // 404 Not Found.
-            error = HTTP_STATUS_404;
-        }
+			if (route_entry != NULL)
+			{
+				route_entry->callback(request, response, route_entry->user_data);
+			}
+			else
+			{
+				// 404 Not Found.
+				error = HTTP_STATUS_404;
+			}
+		}
 
         /* Let's tell the buffer that we don't care about the data that was read before that is not currently
          * being processed, so it can be swept later on.
@@ -406,7 +413,7 @@ int http_request_on_message_complete(http_parser* parser)
          * currently being processed and on which callback fired. */
         http_request_buffer_mark(connection->buffer);
     }
-    
+
     if (error) {
         send_error_response(request, (http_response*)response, error, error);
     }

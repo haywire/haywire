@@ -18,6 +18,7 @@ union stream_handle
 };
 
 extern void* routes;
+extern http_request_callback root_request_callback;
 extern uv_loop_t* uv_loop;
 extern hw_string* http_v1_0;
 extern hw_string* http_v1_1;

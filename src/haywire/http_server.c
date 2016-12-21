@@ -41,6 +41,8 @@ static struct sockaddr_in listen_address;
 
 uv_loop_t* uv_loop;
 void* routes;
+/* only used if routing is disabled */
+http_request_callback root_request_callback;
 hw_string* http_v1_0;
 hw_string* http_v1_1;
 hw_string* server_name;
@@ -131,16 +133,26 @@ void set_route(void* hashmap, char* name, hw_route_entry* route_entry)
 
 void hw_http_add_route(char *route, http_request_callback callback, void* user_data)
 {
-    hw_route_entry* route_entry = malloc(sizeof(hw_route_entry));
-    route_entry->callback = callback;
-    route_entry->user_data = user_data;
-    
-    if (routes == NULL)
-    {
-        routes = kh_init(string_hashmap);
-    }
-    set_route(routes, route, route_entry);
-    printf("Added route %s\n", route); // TODO: Replace with logging instead.
+	if (root_request_callback == NULL)
+	{
+		hw_route_entry* route_entry = malloc(sizeof(hw_route_entry));
+		route_entry->callback = callback;
+		route_entry->user_data = user_data;
+
+		if (routes == NULL)
+		{
+			routes = kh_init(string_hashmap);
+		}
+		set_route(routes, route, route_entry);
+		printf("Added route %s\n", route); // TODO: Replace with logging instead.
+	}
+}
+
+void hw_disable_http_routing(http_request_callback request_callback)
+{
+	root_request_callback = request_callback;
+
+	printf("Routing Disabled \n");
 }
 
 void free_http_server()
@@ -165,25 +177,25 @@ int hw_http_open()
     parser_settings.on_message_begin = http_request_on_message_begin;
     parser_settings.on_message_complete = http_request_on_message_complete;
     parser_settings.on_url = http_request_on_url;
-    
+
 #ifdef UNIX
     signal(SIGPIPE, SIG_IGN);
 #endif // UNIX
-    
+
     listener_count = threads;
-    
+
     /* TODO: Use the return values from uv_tcp_init() and uv_tcp_bind() */
     uv_loop = uv_default_loop();
-    
+
     listener_async_handles = calloc(listener_count, sizeof(uv_async_t));
     listener_event_loops = calloc(listener_count, sizeof(uv_loop_t));
-    
+
     listeners_created_barrier = malloc(sizeof(uv_barrier_t));
     uv_barrier_init(listeners_created_barrier, listener_count + 1);
-    
+
     service_handle = malloc(sizeof(uv_async_t));
     uv_async_init(uv_loop, service_handle, NULL);
-    
+
     if (listener_count == 0)
     {
         /* If running single threaded there is no need to use the IPC pipe
@@ -195,7 +207,7 @@ int hw_http_open()
         {
             printf("TWO %d\n", rc);
         }
-        
+
         if (strcmp(config->balancer, "reuseport") == 0)
         {
             uv_os_fd_t fd;
@@ -211,17 +223,17 @@ int hw_http_open()
                 printf("THREE %d\n", errno);
             }
         }
-        
+
         initialize_http_request_cache();
         http_request_cache_configure_listener(uv_loop, NULL);
-        
+
         uv_ip4_addr(config->http_listen_address, config->http_listen_port, &listen_address);
         uv_tcp_bind(&server, (const struct sockaddr*)&listen_address, 0);
-        
+
         if (config->tcp_nodelay) {
             uv_tcp_nodelay(&server, 1);
         }
-        
+
         uv_listen((uv_stream_t*)&server, config->listen_backlog, http_stream_on_connect);
         print_configuration();
         printf("Listening...\n");
@@ -241,33 +253,33 @@ int hw_http_open()
             struct server_ctx* ctx = servers + i;
             ctx->index = i;
             ctx->listen_backlog = config->listen_backlog;
-            
+
             rc = uv_sem_init(&ctx->semaphore, 0);
             rc = uv_thread_create(&ctx->thread_id, connection_consumer_start, ctx);
         }
-        
+
         uv_barrier_wait(listeners_created_barrier);
         initialize_http_request_cache();
-        
+
         start_connection_dispatching(UV_TCP, threads, servers, config->http_listen_address, config->http_listen_port, config->tcp_nodelay, config->listen_backlog);
     }
     else if (listener_count > 0 && strcmp(config->balancer, "reuseport") == 0)
     {
         struct server_ctx* servers;
         servers = calloc(threads, sizeof(servers[0]));
-        
+
         for (int i = 0; i < threads; i++)
         {
             struct server_ctx* ctx = servers + i;
             ctx->index = i;
             int rc = uv_thread_create(&ctx->thread_id, reuseport_thread_start, ctx);
         }
-        
+
         print_configuration();
         printf("Listening...\n");
         uv_run(uv_loop, UV_RUN_DEFAULT);
     }
-    
+
     return 0;
 }
 
@@ -277,20 +289,20 @@ void reuseport_thread_start(void *arg)
     struct server_ctx* ctx;
     uv_loop_t* loop;
     uv_tcp_t svr;
-    
+
     ctx = arg;
     loop = uv_loop_new();
     listener_event_loops[ctx->index] = *loop;
-    
+
     initialize_http_request_cache();
     http_request_cache_configure_listener(loop, &listener_async_handles[ctx->index]);
-    
+
     struct sockaddr_in addr;
     uv_tcp_t server;
-    
+
     rc = uv_tcp_init_ex(loop, &server, AF_INET);
     uv_ip4_addr(config->http_listen_address, config->http_listen_port, &addr);
-    
+
     uv_os_fd_t fd;
     int on = 1;
     uv_fileno(&server, &fd);
@@ -299,7 +311,7 @@ void reuseport_thread_start(void *arg)
     {
         printf("%d\n", errno);
     }
-    
+
     uv_tcp_bind(&server, (const struct sockaddr*)&addr, 0);
     int r = uv_listen((uv_stream_t*) &server, 128, http_stream_on_connect);
 
@@ -312,7 +324,7 @@ void http_stream_on_connect(uv_stream_t* stream, int status)
     http_connection* connection = create_http_connection();
     uv_tcp_init(stream->loop, &connection->stream);
     http_parser_init(&connection->parser, HTTP_REQUEST);
-    
+
     connection->parser.data = connection;
     connection->stream.data = connection;
 
@@ -503,7 +515,7 @@ void http_server_after_write(uv_write_t* req, int status)
     if (!connection->keep_alive && connection->state == OPEN) {
         http_stream_close_connection(connection);
     }
-    
+
     if (write_context->callback)
     {
         write_context->callback(write_context->user_data);

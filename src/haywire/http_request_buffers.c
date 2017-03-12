@@ -183,7 +183,7 @@ void http_request_buffer_pin(hw_request_buffer* buf, void* key, void* pointer) {
 
     khiter_t offset_key = kh_get(pointer_hashmap, buffer->offsets, key);
 
-    int offset = (unsigned char *)pointer - buffer->current;
+    int offset = (unsigned char *)pointer - (unsigned char *)buffer->current;
     int ret;
 
     int is_missing = (offset_key == kh_end(buffer->offsets));

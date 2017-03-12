@@ -10,7 +10,22 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/socket.h>
+
+
+#ifdef WIN32
+# include <winsock2.h>
+#else
+# include <sys/socket.h>
+#endif
+
+
+#ifndef SO_REUSEPORT
+// sat : TODO: Temp fix
+// https://msdn.microsoft.com/en-us/library/windows/desktop/ms740621(v=vs.85).aspx
+// http://unix.superglobalmegacorp.com/BSD4.4/newsrc/sys/socket.h.html
+#define	SO_REUSEPORT	0x0200		// allow local address & port reuse 
+#endif
+
 #include <haywire.h>
 #include "uv.h"
 #include "hw_string.h"

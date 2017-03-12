@@ -48,7 +48,7 @@ void http_request_buffer_sweep(hw_request_buffer* buf) {
              * While we should avoid memory copies, this is relatively infrequent and will only really copy a
              * significant amount of data if requests are pipelined. Otherwise, we'll just be copying the last chunk
              * that was read back to the beginning of the buffer. */
-            memcpy(buffer->current, buffer->current + buffer->mark, used);
+            memcpy(buffer->current, (unsigned char *)buffer->current + buffer->mark, used);
         }
 
         if (buffer->size > DEFAULT_BUFFER_SHRINKSIZE && buffer->used < DEFAULT_BUFFER_SHRINKSIZE) {
@@ -103,7 +103,7 @@ hw_request_buffer* http_request_buffer_init(size_t max_size) {
 void http_request_buffer_chunk(hw_request_buffer* buf, hw_request_buffer_chunk* chunk) {
     http_request_buffer *buffer = (http_request_buffer *) buf;
     chunk->size = buffer->size ? buffer->size - buffer->used : 0;
-    chunk->buffer = buffer->current + buffer->used;
+    chunk->buffer = (unsigned char *)buffer->current + buffer->used;
 }
 
 bool http_request_buffer_alloc(hw_request_buffer* buf, size_t requested_size) {
@@ -183,7 +183,7 @@ void http_request_buffer_pin(hw_request_buffer* buf, void* key, void* pointer) {
 
     khiter_t offset_key = kh_get(pointer_hashmap, buffer->offsets, key);
 
-    int offset = pointer - buffer->current;
+    int offset = (unsigned char *)pointer - buffer->current;
     int ret;
 
     int is_missing = (offset_key == kh_end(buffer->offsets));
@@ -224,7 +224,7 @@ void* http_request_buffer_locate(hw_request_buffer* buf, void* key, void* defaul
         is_missing = (offset_key == kh_end(buffer->offsets));
         if (!is_missing) {
             offset = kh_value(buffer->offsets, offset_key);
-            location = buffer->current + offset;
+            location = (unsigned char *)buffer->current + offset;
         }
     }
 

@@ -2232,7 +2232,7 @@ http_parse_host(const char * buf, struct http_parser_url *u, int found_at) {
         switch(new_s) {
             case s_http_host:
                 if (s != s_http_host) {
-                    u->field_data[UF_HOST].off = p - buf;
+                    u->field_data[UF_HOST].off = (uint16_t)(p - buf);
                 }
                 u->field_data[UF_HOST].len++;
                 break;

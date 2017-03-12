@@ -5,7 +5,7 @@
 
 hw_string* create_string(const char* value)
 {
-    int length = strlen(value);
+	size_t length = strlen(value);
     hw_string* str = malloc(sizeof(hw_string));
     str->value = malloc(length);
     memcpy(str->value, value, length);

@@ -38,7 +38,7 @@ void http_request_buffer_sweep(hw_request_buffer* buf) {
     http_request_buffer* buffer = (http_request_buffer*) buf;
     void* pointer;
     int offset;
-    int used = buffer->used - buffer->mark;
+    int used = (int)(buffer->used - buffer->mark);
 
     if (buffer->mark > 0) {
         bool offsets_active = false;
@@ -97,7 +97,7 @@ hw_request_buffer* http_request_buffer_init(size_t max_size) {
     buffer->current = NULL;
     buffer->offsets = kh_init(pointer_hashmap);
     buffer->offsets_active = false;
-    return buffer;
+    return (hw_request_buffer *)buffer;
 }
 
 void http_request_buffer_chunk(hw_request_buffer* buf, hw_request_buffer_chunk* chunk) {
@@ -151,7 +151,7 @@ bool http_request_buffer_alloc(hw_request_buffer* buf, size_t requested_size) {
 void http_request_buffer_print(hw_request_buffer* buf) {
     http_request_buffer* buffer = (http_request_buffer*) buf;
 
-    printf("Buffer: current=%u; size=%u; used=%u\n", buffer->current, buffer->size, buffer->used);
+    printf("Buffer: current=%p; size=%zu; used=%zu\n", buffer->current, buffer->size, buffer->used);
     printf("    0\t");
     for (int i = 0; i < buffer->used; i++) {
         if (((char*) buffer->current)[i] == '\n') {
@@ -173,7 +173,7 @@ void http_request_buffer_print(hw_request_buffer* buf) {
     void* pointer;
     int offset;
     kh_foreach(buffer->offsets, pointer, offset, {
-        printf("\tPointer %u -> offset=%u\n", pointer, offset);
+        printf("\tPointer %p -> offset=%u\n", pointer, offset);
     });
     printf("----\n");
 }
@@ -218,12 +218,13 @@ void* http_request_buffer_locate(hw_request_buffer* buf, void* key, void* defaul
     void* location = default_pointer;
     khiter_t offset_key = kh_get(pointer_hashmap, buffer->offsets, key);
 
-    int offset, is_missing;
+	int is_missing;
+	size_t offset;
 
     if (buffer->offsets_active) {
         is_missing = (offset_key == kh_end(buffer->offsets));
         if (!is_missing) {
-            offset = kh_value(buffer->offsets, offset_key);
+            offset = (size_t)kh_value(buffer->offsets, offset_key);
             location = (unsigned char *)buffer->current + offset;
         }
     }

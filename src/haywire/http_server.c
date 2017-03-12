@@ -20,7 +20,7 @@
 
 
 #ifndef SO_REUSEPORT
-// sat : TODO: Temp fix
+// TODO: Temp fix
 // https://msdn.microsoft.com/en-us/library/windows/desktop/ms740621(v=vs.85).aspx
 // http://unix.superglobalmegacorp.com/BSD4.4/newsrc/sys/socket.h.html
 #define	SO_REUSEPORT	0x0200		// allow local address & port reuse 

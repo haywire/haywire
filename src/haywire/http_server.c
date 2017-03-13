@@ -487,7 +487,7 @@ int http_server_write_response_single(hw_write_context* write_context, hw_string
         uv_buf_t *resbuf = (uv_buf_t *) (write_req + 1);
 
         resbuf->base = response->value;
-        resbuf->len = (ULONG)response->length;
+        resbuf->len = response->length;
 
         write_req->data = write_context;
 

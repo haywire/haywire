@@ -20,6 +20,11 @@
 *.opensdf
 *.ncrunchsolution*
 *.sdf
+*.userosscache
+*.sln.docstates
+
+# Visual Studio cache/options directory
+.vs/
 
 # Build artifacts
 Default/

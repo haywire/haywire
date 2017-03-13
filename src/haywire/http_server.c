@@ -10,7 +10,22 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/socket.h>
+
+
+#ifdef WIN32
+# include <winsock2.h>
+#else
+# include <sys/socket.h>
+#endif
+
+
+#ifndef SO_REUSEPORT
+// TODO: Temp fix
+// https://msdn.microsoft.com/en-us/library/windows/desktop/ms740621(v=vs.85).aspx
+// http://unix.superglobalmegacorp.com/BSD4.4/newsrc/sys/socket.h.html
+#define	SO_REUSEPORT	0x0200		// allow local address & port reuse 
+#endif
+
 #include <haywire.h>
 #include "uv.h"
 #include "hw_string.h"
@@ -276,7 +291,6 @@ void reuseport_thread_start(void *arg)
     int rc;
     struct server_ctx* ctx;
     uv_loop_t* loop;
-    uv_tcp_t svr;
     
     ctx = arg;
     loop = uv_loop_new();
@@ -293,7 +307,7 @@ void reuseport_thread_start(void *arg)
     
     uv_os_fd_t fd;
     int on = 1;
-    uv_fileno(&server, &fd);
+    uv_fileno((const uv_handle_t *)(&server), &fd);
     rc = setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, (char*)&on, sizeof(on));
     if (rc != 0)
     {
@@ -337,7 +351,7 @@ void http_stream_on_alloc(uv_handle_t* client, size_t suggested_size, uv_buf_t* 
         /* TODO out of memory event - we should hook up an application callback to this */
     }
 
-    *buf = uv_buf_init(chunk.buffer, chunk.size);
+    *buf = uv_buf_init(chunk.buffer, (unsigned int)chunk.size);
 }
 
 void http_stream_on_close(uv_handle_t* handle)
@@ -355,13 +369,13 @@ void http_stream_on_close(uv_handle_t* handle)
 void http_stream_close_connection(http_connection* connection) {
     if (connection->state == OPEN) {
         connection->state = CLOSING;
-        uv_close(&connection->stream, http_stream_on_close);
+        uv_close((uv_handle_t *)(&connection->stream), http_stream_on_close);
     }
 }
 
 void handle_request_error(http_connection* connection)
 {
-    uv_handle_t* stream = &connection->stream;
+	uv_stream_t* stream = (uv_stream_t *)(&connection->stream);
 
     if (connection->state == OPEN) {
         uv_read_stop(stream);
@@ -409,7 +423,7 @@ void handle_internal_error(http_connection* connection)
 void http_stream_on_shutdown(uv_shutdown_t* req, int status)
 {
     http_connection* connection = req->data;
-    uv_handle_t* stream = &connection->stream;
+    uv_handle_t* stream = (uv_handle_t *)(&connection->stream);
     if (connection->state == OPEN) {
         http_stream_close_connection(connection);
     }
@@ -445,7 +459,7 @@ void http_stream_on_read_http_parser(uv_stream_t* tcp, ssize_t nread, const uv_b
     else if (nread == UV_EOF){
         uv_shutdown_t* req = malloc(sizeof(uv_shutdown_t));
         req->data = connection;
-        uv_shutdown(req, &connection->stream, http_stream_on_shutdown);
+        uv_shutdown(req, (uv_stream_t *)(&connection->stream), http_stream_on_shutdown);
     }
     else if (nread == UV_ECONNRESET || nread == UV_ECONNABORTED) {
         /* Let's close the connection as the other peer just disappeared */

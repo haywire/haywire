@@ -10,12 +10,12 @@ typedef struct hw_route_token_st {
     int start;
 } hw_route_token;
 
-void hw_route_next_token(hw_string* url, int start, hw_route_token* result) {
+void hw_route_next_token(hw_string* url, size_t start, hw_route_token* result) {
     while (start < url->length && (url->value[start] == '/')) {
         start++;
     }
     
-    int end = start;
+	size_t end = start;
     
     while (end < url->length && url->value[end] != '/') {
         end++;
@@ -24,7 +24,7 @@ void hw_route_next_token(hw_string* url, int start, hw_route_token* result) {
     if (end != start) {
         result->string.value = url->value + start;
         result->string.length = end - start;
-        result->start = start;
+        result->start = (int)start;
     }
     else {
         result->string.value = NULL;

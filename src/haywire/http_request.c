@@ -317,30 +317,30 @@ void send_error_response(http_request* request, http_response* response, const c
 
     status_code.value = error_code;
     status_code.length = strlen(error_code);
-    hw_set_response_status_code(response, &status_code);
+    hw_set_response_status_code( (hw_http_response *)response, &status_code);
     
     SETSTRING(content_type_name, "Content-Type");
     
     SETSTRING(content_type_value, "text/html");
-    hw_set_response_header(response, &content_type_name, &content_type_value);
+    hw_set_response_header( (hw_http_response *)response, &content_type_name, &content_type_value);
 
     body.value = error_message;
     body.length = strlen(error_message);
-    hw_set_body(response, &body);
+    hw_set_body( (hw_http_response *)response, &body);
     
     if (request->keep_alive)
     {
         SETSTRING(keep_alive_name, "Connection");
         
         SETSTRING(keep_alive_value, "Keep-Alive");
-        hw_set_response_header(response, &keep_alive_name, &keep_alive_value);
+        hw_set_response_header((hw_http_response *)response, &keep_alive_name, &keep_alive_value);
     }
     else
     {
-        hw_set_http_version(response, 1, 0);
+        hw_set_http_version((hw_http_response *)response, 1, 0);
     }
 
-    hw_http_response_send(response, NULL, 0);
+    hw_http_response_send((hw_http_response *)response, NULL, 0);
 }
 
 /**

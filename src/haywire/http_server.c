@@ -137,7 +137,7 @@ void hw_http_add_route(char *route, http_request_callback callback, void* user_d
     hw_route_entry* route_entry = malloc(sizeof(hw_route_entry));
     route_entry->callback = callback;
     route_entry->user_data = user_data;
-    
+
     if (routes == NULL)
     {
         routes = kh_init(string_hashmap);
@@ -168,41 +168,41 @@ int hw_http_open()
     parser_settings.on_message_begin = http_request_on_message_begin;
     parser_settings.on_message_complete = http_request_on_message_complete;
     parser_settings.on_url = http_request_on_url;
-    
+
 #ifdef UNIX
     signal(SIGPIPE, SIG_IGN);
 #endif // UNIX
-    
+
     listener_count = threads;
-    
+
     /* TODO: Use the return values from uv_tcp_init() and uv_tcp_bind() */
     uv_loop = uv_default_loop();
     uv_tcp_init(uv_loop, &server);
-    
+
     listener_async_handles = calloc(listener_count, sizeof(uv_async_t));
     listener_event_loops = calloc(listener_count, sizeof(uv_loop_t));
-    
+
     listeners_created_barrier = malloc(sizeof(uv_barrier_t));
     uv_barrier_init(listeners_created_barrier, listener_count + 1);
-    
+
     service_handle = malloc(sizeof(uv_async_t));
     uv_async_init(uv_loop, service_handle, NULL);
-    
+
     if (listener_count == 0)
     {
         /* If running single threaded there is no need to use the IPC pipe
          to distribute requests between threads so lets avoid the IPC overhead */
-        
+
         initialize_http_request_cache();
         http_request_cache_configure_listener(uv_loop, NULL);
-        
+
         uv_ip4_addr(config->http_listen_address, config->http_listen_port, &listen_address);
         uv_tcp_bind(&server, (const struct sockaddr*)&listen_address, 0);
-        
+
         if (config->tcp_nodelay) {
             uv_tcp_nodelay(&server, 1);
         }
-        
+
         uv_listen((uv_stream_t*)&server, config->listen_backlog, http_stream_on_connect);
         print_configuration();
         printf("Listening...\n");
@@ -221,17 +221,17 @@ int hw_http_open()
             int rc = 0;
             struct server_ctx* ctx = servers + i;
             ctx->index = i;
-            
+
             rc = uv_sem_init(&ctx->semaphore, 0);
             rc = uv_thread_create(&ctx->thread_id, connection_consumer_start, ctx);
         }
-        
+
         uv_barrier_wait(listeners_created_barrier);
         initialize_http_request_cache();
-        
+
         start_connection_dispatching(UV_TCP, threads, servers, config->http_listen_address, config->http_listen_port, config->tcp_nodelay, config->listen_backlog);
     }
-    
+
     return 0;
 }
 
@@ -240,7 +240,7 @@ void http_stream_on_connect(uv_stream_t* stream, int status)
     http_connection* connection = create_http_connection();
     uv_tcp_init(uv_loop, &connection->stream);
     http_parser_init(&connection->parser, HTTP_REQUEST);
-    
+
     connection->parser.data = connection;
     connection->stream.data = connection;
 
@@ -388,109 +388,82 @@ void http_stream_on_read_http_parser(uv_stream_t* tcp, ssize_t nread, const uv_b
 void http_stream_on_read_pico(uv_stream_t* tcp, ssize_t nread, const uv_buf_t* buf)
 {
     http_connection* connection = (http_connection*)tcp->data;
+    int total_parsed = 0;
 
-    if (nread > 0)
-    {
-        // TODO: Should this be at a higher level? Both parsers call this the same way.
-        http_request_buffer_consume(connection->buffer, nread);
+    if (nread > 0) {
+      while (total_parsed < nread)
+      {
+          // TODO: Should this be at a higher level? Both parsers call this the same way.
+          http_request_buffer_consume(connection->buffer, nread);
 
-        printf("START\tNREAD: %d BUFUSED: %d PREVBUFLEN: %d\n",
-               nread,
-               http_request_buffer_get_used(connection->buffer),
-               connection->prevbuflen);
-        //fwrite(http_request_buffer_get_buffer(connection->buffer),
-        //       http_request_buffer_get_used(connection->buffer), 1, stdout);
+          printf("LOOP\tNREAD: %d BUFUSED: %d PREVBUFLEN: %d\n",
+                 nread,
+                 http_request_buffer_get_used(connection->buffer),
+                 connection->prevbuflen);
 
-        while (connection->prevbuflen < http_request_buffer_get_used(connection->buffer))
-        {
-            printf("LOOP\tNREAD: %d BUFUSED: %d PREVBUFLEN: %d\n",
-                   nread,
-                   http_request_buffer_get_used(connection->buffer),
-                   connection->prevbuflen);
+          int parsed;
+          int new_request = 1;
+          char buf[4096], *method, *path;
+          int minor_version;
+          struct phr_header headers[100];
+          size_t method_len;
+          size_t path_len;
+          size_t num_headers;
+          num_headers = sizeof(headers) / sizeof(headers[0]);
 
-            int parsed;
-            char buf[4096], *method, *path;
-            int minor_version;
-            struct phr_header headers[100];
-            size_t method_len;
-            size_t path_len;
-            size_t num_headers;
-            num_headers = sizeof(headers) / sizeof(headers[0]);
+          parsed = phr_parse_request(&http_request_buffer_get_buffer(connection->buffer)[connection->prevbuflen],
+                                         http_request_buffer_get_used(connection->buffer),
+                                         &method, &method_len, &path, &path_len, &minor_version, headers,
+                                         &num_headers, total_parsed);
 
-            parsed = phr_parse_request(&http_request_buffer_get_buffer(connection->buffer)[connection->prevbuflen],
-                                       http_request_buffer_get_used(connection->buffer),
-                                       &method, &method_len, &path, &path_len, &minor_version, headers,
-                                       &num_headers, 0);
-
-            if (parsed > 0)
-            {
-                // Successfully parsed the request.
-                connection->prevbuflen += parsed;
-
-                connection->keep_alive = 1;
-                http_request* request = create_http_request(connection);
-                connection->request = request;
-
-                connection->request->url->value = (char *)malloc(path_len + 1);
-                request->url->length = path_len;
-                strncpy(connection->request->url->value, path, path_len);
-                path[path_len] = 0x00;
-
-                // TODO: Zero-copy headers parsed by pico. Need this PR to implement.
-                // https://github.com/kellabyte/Haywire/pull/79
-                for (int i=0; i<num_headers; i++)
-                {
-                    //set_request_header(connection->request, hw_strdup(&headers[i].name), hw_strdup(&headers[i].value));
+          if (parsed > 0) {
+              /* Successfully parsed the request. */
+              if (new_request) {
+                if (connection->request) {
+                    /* We're seeing a new request on the same connection, so it's time to free up the old one
+                     * and create a new one.
+                     *
+                     * Note: This assumes that the request callback is synchronous. If we're ever to support async callbacks,
+                     * we either need to copy all required data and pass it into the async callback or free on write instead. */
+                    free_http_request(connection->request);
                 }
 
-                // Send response.
-                http_request_complete_request(connection);
+                connection->request = create_http_request(connection);
+              }
 
-                size_t old_used = http_request_buffer_get_used(connection->buffer);
-                http_request_buffer_mark(connection->buffer);
-                http_request_buffer_sweep(connection->buffer);
-                size_t new_used = http_request_buffer_get_used(connection->buffer);
+              http_request* request = connection->request;
 
-                printf("SWEEP\tNREAD: %d BUFUSED: %d PREVBUFLEN: %d OLD: %d NEW: %d PREVBUFLEN: ",
-                       nread,
-                       http_request_buffer_get_used(connection->buffer),
-                       connection->prevbuflen,
-                       old_used,
-                       new_used);
+              connection->request->url->value = (char *)malloc(path_len + 1);
+              request->url->length = path_len;
+              strncpy(connection->request->url->value, path, path_len);
+              path[path_len] = 0x00;
 
-                if (new_used == 0) // WAIT, how did sweep give me a 0 length buffer?
-                    connection->prevbuflen = 0;
-                else if (old_used > new_used)
-                    connection->prevbuflen -= (old_used - new_used);
+              // TODO: Zero-copy headers parsed by pico. Need this PR to implement.
+              // https://github.com/kellabyte/Haywire/pull/79
+              for (int i=0; i<num_headers; i++)
+              {
+                  //set_request_header(connection->request, hw_strdup(&headers[i].name), hw_strdup(&headers[i].value));
+              }
 
-                printf("%d\n", connection->prevbuflen);
+              // Send response.
+              http_request_complete_request(connection);
+              http_request_buffer_mark(connection->buffer);
+          }
+          else if (parsed == -2) {
+            new_request = 0;
+          }
+          else if (parsed == -1) {
+            /* The request can't be parsed */
+            handle_bad_request(connection);
+          }
 
-//                printf("request is %d bytes long\n", parsed);
-//                printf("method is %.*s\n", (int)method_len, method);
-//                printf("path is %.*s\n", (int)path_len, path);
-//                printf("HTTP version is 1.%d\n", minor_version);
-//                printf("headers:\n");
-//                for (int i = 0; i != num_headers; ++i) {
-//                    printf("%.*s: %.*s\n", (int)headers[i].name_len, headers[i].name,
-//                           (int)headers[i].value_len, headers[i].value);
-//                }
-            }
-            else if (parsed == -1)
-            {
-                /* Request is incomplete so keep reading and parsing. */
-                //connection->prevbuflen = 0;
-                break;
-            }
-            else if (parsed == -2)
-            {
-                break;
-            }
-        }
+          total_parsed += parsed;
+      }
 
-        //if (connection->prevbuflen == http_request_buffer_get_used(connection->buffer)) {
-        //    connection->prevbuflen = 0;
-        //}
-    } else if (nread == 0) {
+      http_request_buffer_sweep(connection->buffer);
+    }
+
+    else if (nread == 0) {
         /* no-op - there's no data to be read, but there might be later */
     }
     else if (nread == UV_ENOBUFS) {
@@ -557,7 +530,7 @@ void http_server_after_write(uv_write_t* req, int status)
     if (!connection->keep_alive && connection->state == OPEN) {
         http_stream_close_connection(connection);
     }
-    
+
     if (write_context->callback)
     {
         write_context->callback(write_context->user_data);
@@ -565,4 +538,3 @@ void http_server_after_write(uv_write_t* req, int status)
 
     http_server_cleanup_write(resbuf->base, write_context, req);
 }
-

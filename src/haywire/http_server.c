@@ -429,6 +429,8 @@ void http_stream_on_read_pico(uv_stream_t* tcp, ssize_t nread, const uv_buf_t* b
                 }
 
                 connection->request = create_http_request(connection);
+
+                new_request = 0;
               }
 
               http_request* request = connection->request;
@@ -448,6 +450,8 @@ void http_stream_on_read_pico(uv_stream_t* tcp, ssize_t nread, const uv_buf_t* b
               // Send response.
               http_request_complete_request(connection);
               http_request_buffer_mark(connection->buffer);
+
+              new_request = 1;
           }
           else if (parsed == -2) {
             new_request = 0;

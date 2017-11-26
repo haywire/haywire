@@ -30,14 +30,14 @@ apt-get install git gcc make cmake automake autoconf libssl-dev libtool
 ```
 
 ## Compiling on Linux
-    ./make.sh
+mkdir build && cd build && cmake .. && make -j5
     
 ## Compiling on Mac OSX
 ```
 brew install automake
 brew install libtool
 brew install openssl
-./make.sh
+mkdir build && cd build && cmake .. && make -j5
 ```
 
 ## Compiling on Windows
@@ -46,6 +46,10 @@ These instructions are old but may still work. We need to make Windows support i
 Open the Developer Command Prompt for Visual Studio
 
     build.bat
+
+## Compiling for Windows on Linux(Ubuntu)
+sudo apt-get install mingw-w64 g++-mingw-w64
+mkdir build && cd build && cmake .. -DCMAKE_TOOLCHAIN_FILE=Toolchain-Ubuntu-mingw64.cmake && make -j5
     
 ## Benchmarks
 

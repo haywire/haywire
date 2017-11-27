@@ -1,10 +1,16 @@
 cmake_minimum_required(VERSION 2.6)
 include("common.cmake")
 
+project(haywire)
+
+# ----------------------------------------
+# Dependencies
+# ----------------------------------------
+include(cmake/Dependencies.cmake)
+
 # ----------------------------------------
 # Haywire
 # ----------------------------------------
-project(haywire C)
 set(CMAKE_BUILD_TYPE RelWithDebInfo)
 
 add_definitions(-std=gnu99)
@@ -29,15 +35,13 @@ file(GLOB_RECURSE HAYWIRE_SOURCES
 
 list(SORT HAYWIRE_SOURCES)
 create_source_group("Source Files" "${CMAKE_CURRENT_SOURCE_DIR}/src" ${HAYWIRE_SOURCES})
-include_directories(${CMAKE_SOURCE_DIR}/lib/libuv/include)
-include_directories(${CMAKE_SOURCE_DIR}/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 find_package(Threads REQUIRED)
 
 add_library(haywire STATIC ${HAYWIRE_SOURCES})
 
-target_link_libraries (haywire ${CMAKE_THREAD_LIBS_INIT}
-    ${CMAKE_SOURCE_DIR}/lib/libuv/.libs/libuv.a)
+target_link_libraries (haywire ${CMAKE_THREAD_LIBS_INIT} libuv)
 
 GET_PROPERTY(haywire_location TARGET haywire PROPERTY LOCATION)
 
@@ -52,8 +56,6 @@ file(GLOB_RECURSE HELLOWORLD_SOURCES
 
 list(SORT HELLOWORLD_SOURCES)
 create_source_group("Source Files" "${CMAKE_CURRENT_SOURCE_DIR}/src" ${HELLOWORLD_SOURCES})
-include_directories(${CMAKE_SOURCE_DIR}/lib/libuv/include)
-include_directories(${CMAKE_SOURCE_DIR}/include)
 
 find_package(Threads REQUIRED)
 
@@ -65,7 +67,8 @@ add_dependencies(hello_world haywire)
 # Libraries to link in reverse order because that's what ld requires.
 target_link_libraries (hello_world
     ${haywire_location}
-    ${CMAKE_SOURCE_DIR}/lib/libuv/.libs/libuv.a
+    libuv
+    ${WINDOWS_LINKER_OPTS}
     ${CMAKE_THREAD_LIBS_INIT})
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")

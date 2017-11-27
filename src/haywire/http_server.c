@@ -7,10 +7,16 @@
 #include <signal.h>
 #endif // PLATFORM_POSIX
 
+#ifdef __linux__
+    #include <sys/socket.h>
+#else
+    #include <winsock2.h>
+    #define SO_REUSEPORT SO_EXCLUSIVEADDRUSE  
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/socket.h>
 #include <haywire.h>
 #include "uv.h"
 #include "hw_string.h"

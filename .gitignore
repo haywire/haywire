@@ -41,3 +41,6 @@ Haywire.xcworkspace/
 
 # CLion
 .idea
+
+#VsCode
+.vscode

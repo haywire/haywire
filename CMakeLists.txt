@@ -35,7 +35,7 @@ file(GLOB_RECURSE HAYWIRE_SOURCES
 
 list(SORT HAYWIRE_SOURCES)
 create_source_group("Source Files" "${CMAKE_CURRENT_SOURCE_DIR}/src" ${HAYWIRE_SOURCES})
-include_directories(${CMAKE_SOURCE_DIR}/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 find_package(Threads REQUIRED)
 
@@ -56,8 +56,6 @@ file(GLOB_RECURSE HELLOWORLD_SOURCES
 
 list(SORT HELLOWORLD_SOURCES)
 create_source_group("Source Files" "${CMAKE_CURRENT_SOURCE_DIR}/src" ${HELLOWORLD_SOURCES})
-include_directories(${CMAKE_SOURCE_DIR}/lib/libuv/include)
-include_directories(${CMAKE_SOURCE_DIR}/include)
 
 find_package(Threads REQUIRED)
 
